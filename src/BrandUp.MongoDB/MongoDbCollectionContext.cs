@@ -19,7 +19,7 @@ namespace BrandUp.MongoDB
 
         public string CollectionName { get; private set; }
         public Type DocumentType { get; }
-        void IMongoDbCollectionContext.Initialize(string collectionName, MongoDbContext dbContext, CancellationToken cancellationToken = default)
+        void IMongoDbCollectionContext.Initialize(string collectionName, MongoDbContext dbContext, CancellationToken cancellationToken)
         {
             CollectionName = collectionName ?? throw new ArgumentNullException(nameof(collectionName));
 
