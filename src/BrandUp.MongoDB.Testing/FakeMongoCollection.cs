@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BrandUp.MongoDB.Tests
+namespace BrandUp.MongoDB.Testing
 {
     public class FakeMongoCollection<TDocument> : IMongoCollection<TDocument>, IFakeMongoCollection
     {

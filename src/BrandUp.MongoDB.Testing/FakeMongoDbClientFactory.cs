@@ -1,6 +1,6 @@
 ﻿using MongoDB.Driver;
 
-namespace BrandUp.MongoDB.Tests
+namespace BrandUp.MongoDB.Testing
 {
     public class FakeMongoDbClientFactory : IMongoDbClientFactory
     {

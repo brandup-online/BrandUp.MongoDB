@@ -17,6 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\BrandUp.MongoDB.Testing\BrandUp.MongoDB.Testing.csproj" />
     <ProjectReference Include="..\..\src\BrandUp.MongoDB\BrandUp.MongoDB.csproj" />
   </ItemGroup>
 

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BrandUp.MongoDB.Tests
+namespace BrandUp.MongoDB.Testing
 {
     public class FakeMongoDatabase : IMongoDatabase
     {

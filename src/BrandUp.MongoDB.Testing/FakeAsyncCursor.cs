@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace BrandUp.MongoDB.Tests
+namespace BrandUp.MongoDB.Testing
 {
     public class FakeAsyncCursor<T> : IAsyncCursor<T>
     {

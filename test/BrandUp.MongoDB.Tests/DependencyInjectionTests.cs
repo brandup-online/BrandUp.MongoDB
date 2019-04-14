@@ -1,10 +1,33 @@
 using Microsoft.Extensions.DependencyInjection;
+using System;
 using Xunit;
 
 namespace BrandUp.MongoDB.Tests
 {
-    public class DependencyInjectionTests
+    public class DependencyInjectionTests : IDisposable
     {
+        private readonly ServiceProvider scope;
+
+        public DependencyInjectionTests()
+        {
+            var services = new ServiceCollection();
+
+            services.AddMongoDbContext<TestDbContext>(options =>
+            {
+                options.DatabaseName = "Test";
+                options.UseFakeClientFactory();
+            });
+
+            scope = services.BuildServiceProvider();
+        }
+
+        void IDisposable.Dispose()
+        {
+            scope.Dispose();
+        }
+
+        #region Test methods
+
         [Fact]
         public void AddMongoDbContext()
         {
@@ -13,9 +36,8 @@ namespace BrandUp.MongoDB.Tests
             services.AddMongoDbContext<TestDbContext>(options =>
             {
                 options.DatabaseName = "Test";
-                options.ClientFactory = new FakeMongoDbClientFactory();
+                options.UseFakeClientFactory();
             });
-            services.AddMongoDbContextExension<TestDbContext, IWorkerDbContext>();
 
             var scope = services.BuildServiceProvider();
 
@@ -25,14 +47,14 @@ namespace BrandUp.MongoDB.Tests
         }
 
         [Fact]
-        public void AddMongoDbContextImplementation()
+        public void AddMongoDbContextExension()
         {
             var services = new ServiceCollection();
 
             services.AddMongoDbContext<TestDbContext>(options =>
             {
                 options.DatabaseName = "Test";
-                options.ClientFactory = new FakeMongoDbClientFactory();
+                options.UseFakeClientFactory();
             });
             services.AddMongoDbContextExension<TestDbContext, IWorkerDbContext>();
 
@@ -42,5 +64,7 @@ namespace BrandUp.MongoDB.Tests
 
             Assert.NotNull(dbContext);
         }
+
+        #endregion
     }
 }

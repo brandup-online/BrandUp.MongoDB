@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{432FA819-2
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandUp.MongoDB.Tests", "test\BrandUp.MongoDB.Tests\BrandUp.MongoDB.Tests.csproj", "{B1ECABF2-29BD-4A18-A379-BE01922E8EAC}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB.Testing", "src\BrandUp.MongoDB.Testing\BrandUp.MongoDB.Testing.csproj", "{95E7F93C-0B5A-460A-8033-7450D4949AB9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{B1ECABF2-29BD-4A18-A379-BE01922E8EAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B1ECABF2-29BD-4A18-A379-BE01922E8EAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B1ECABF2-29BD-4A18-A379-BE01922E8EAC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95E7F93C-0B5A-460A-8033-7450D4949AB9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95E7F93C-0B5A-460A-8033-7450D4949AB9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95E7F93C-0B5A-460A-8033-7450D4949AB9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95E7F93C-0B5A-460A-8033-7450D4949AB9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -32,6 +38,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{33F154C3-EC25-4CC8-86EF-D2CEBBBB94F0} = {17DD091D-2C32-45D3-8EB5-1374BB8D8980}
 		{B1ECABF2-29BD-4A18-A379-BE01922E8EAC} = {432FA819-2F7B-47E4-BC06-A51F8B567D87}
+		{95E7F93C-0B5A-460A-8033-7450D4949AB9} = {17DD091D-2C32-45D3-8EB5-1374BB8D8980}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4167130E-7E0B-401A-9C69-B84D8D0A532E}

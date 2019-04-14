@@ -12,10 +12,13 @@ namespace BrandUp.MongoDB.Tests
         {
             builder = new MongoDbContextBuilder<TestDbContext>
             {
-                DatabaseName = "Test",
-                ClientFactory = new FakeMongoDbClientFactory()
+                DatabaseName = "Test"
             };
+
+            builder.UseFakeClientFactory();
         }
+
+        #region Test methods
 
         [Fact]
         public void CheckCollections()
@@ -74,5 +77,7 @@ namespace BrandUp.MongoDB.Tests
             Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsGetCreationOptions);
             Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsOnSetupCollection);
         }
+
+        #endregion
     }
 }
