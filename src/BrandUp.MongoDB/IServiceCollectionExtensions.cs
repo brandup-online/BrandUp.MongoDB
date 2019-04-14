@@ -28,11 +28,11 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddMongoDbContextImplementation<TContextImplementation, TContext>(this IServiceCollection services)
-            where TContextImplementation : class
-            where TContext : MongoDbContext, TContextImplementation
+        public static IServiceCollection AddMongoDbContextExension<TContext, TExtension>(this IServiceCollection services)
+            where TContext : MongoDbContext, TExtension
+            where TExtension : class
         {
-            services.AddSingleton<TContextImplementation>(s => s.GetService<TContext>());
+            services.AddTransient<TExtension>(s => s.GetService<TContext>());
             return services;
         }
     }

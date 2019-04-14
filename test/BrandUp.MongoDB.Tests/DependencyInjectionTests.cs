@@ -15,7 +15,7 @@ namespace BrandUp.MongoDB.Tests
                 options.DatabaseName = "Test";
                 options.ClientFactory = new FakeMongoDbClientFactory();
             });
-            services.AddMongoDbContextImplementation<IWorkerDbContext, TestDbContext>();
+            services.AddMongoDbContextExension<TestDbContext, IWorkerDbContext>();
 
             var scope = services.BuildServiceProvider();
 
@@ -34,7 +34,7 @@ namespace BrandUp.MongoDB.Tests
                 options.DatabaseName = "Test";
                 options.ClientFactory = new FakeMongoDbClientFactory();
             });
-            services.AddMongoDbContextImplementation<IWorkerDbContext, TestDbContext>();
+            services.AddMongoDbContextExension<TestDbContext, IWorkerDbContext>();
 
             var scope = services.BuildServiceProvider();
 
