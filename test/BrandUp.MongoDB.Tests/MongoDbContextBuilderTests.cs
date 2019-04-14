@@ -16,6 +16,8 @@ namespace BrandUp.MongoDB.Tests
             };
 
             builder.UseFakeClientFactory();
+
+            builder.Build();
         }
 
         #region Test methods
@@ -44,6 +46,9 @@ namespace BrandUp.MongoDB.Tests
             builder.UseCamelCaseElementName();
 
             Assert.NotEmpty(builder.Conventions.OfType<CamelCaseElementNameConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(ArticleDocument));
+            Assert.NotEmpty(pack.Conventions.OfType<CamelCaseElementNameConvention>());
         }
 
         [Fact]
@@ -52,6 +57,9 @@ namespace BrandUp.MongoDB.Tests
             builder.UseIgnoreIfNull(false);
 
             Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfNullConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(ArticleDocument));
+            Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfNullConvention>());
         }
 
         [Fact]
@@ -60,6 +68,9 @@ namespace BrandUp.MongoDB.Tests
             builder.UseIgnoreIfDefault(false);
 
             Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfDefaultConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(ArticleDocument));
+            Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
         }
 
         [Fact]

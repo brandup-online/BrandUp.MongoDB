@@ -3,7 +3,6 @@ using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
 using System.Reflection;
-using System.Threading;
 
 namespace BrandUp.MongoDB
 {
@@ -23,9 +22,7 @@ namespace BrandUp.MongoDB
     public class MongoDbContextBuilder<TContext> : IMongoDbContextBuilder
         where TContext : MongoDbContext
     {
-        private static bool _initialized = false;
-        private static object _initializationLock = new object();
-        private static object _initializationTarget;
+        private static readonly object _initializationLock = new object();
         private readonly List<MongoDbCollectionOptions> collections = new List<MongoDbCollectionOptions>();
         private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
         private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
@@ -134,18 +131,15 @@ namespace BrandUp.MongoDB
             var dbContextType = DbContextType;
             var dbContextName = dbContextType.FullName;
 
-            var dbContext = (TContext)Activator.CreateInstance(dbContextType, options);
-
-            LazyInitializer.EnsureInitialized(ref _initializationTarget, ref _initialized, ref _initializationLock, () =>
+            lock (_initializationLock)
             {
-                RegisterConventions(dbContextName, dbContext);
-                return null;
-            });
+                RegisterConventions(dbContextName);
+            }
 
-            return dbContext;
+            return (TContext)Activator.CreateInstance(dbContextType, options);
         }
 
-        private void RegisterConventions(string name, MongoDbContext dbContext)
+        private void RegisterConventions(string name)
         {
             ConventionRegistry.Register(name, Conventions, HasDocumentType);
         }
