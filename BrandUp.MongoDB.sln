@@ -5,13 +5,18 @@ VisualStudioVersion = 15.0.28307.572
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{17DD091D-2C32-45D3-8EB5-1374BB8D8980}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandUp.MongoDB", "src\BrandUp.MongoDB\BrandUp.MongoDB.csproj", "{33F154C3-EC25-4CC8-86EF-D2CEBBBB94F0}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB", "src\BrandUp.MongoDB\BrandUp.MongoDB.csproj", "{33F154C3-EC25-4CC8-86EF-D2CEBBBB94F0}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "test", "test", "{432FA819-2F7B-47E4-BC06-A51F8B567D87}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandUp.MongoDB.Tests", "test\BrandUp.MongoDB.Tests\BrandUp.MongoDB.Tests.csproj", "{B1ECABF2-29BD-4A18-A379-BE01922E8EAC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB.Tests", "test\BrandUp.MongoDB.Tests\BrandUp.MongoDB.Tests.csproj", "{B1ECABF2-29BD-4A18-A379-BE01922E8EAC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB.Testing", "src\BrandUp.MongoDB.Testing\BrandUp.MongoDB.Testing.csproj", "{95E7F93C-0B5A-460A-8033-7450D4949AB9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{AE050A88-397B-4718-A05C-ABD846B821C8}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

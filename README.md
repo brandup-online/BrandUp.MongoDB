@@ -22,12 +22,12 @@ public interface ICommentsDbContext
     IMongoCollection<CommentDocument> Comments { get; }
 }
 
-[MongoDbDocument(CollectionName = "Articles")]
+[Document(CollectionName = "Articles")]
 public class ArticleDocument
 {
 }
 
-[MongoDbDocument(CollectionName = "Comments")]
+[Document(CollectionName = "Comments")]
 public class CommentDocument
 {
 }
