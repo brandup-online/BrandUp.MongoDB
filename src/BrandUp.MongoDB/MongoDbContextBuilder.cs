@@ -26,6 +26,7 @@ namespace BrandUp.MongoDB
         private readonly List<MongoDbCollectionOptions> collections = new List<MongoDbCollectionOptions>();
         private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
         private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
+        private readonly HashSet<Type> documentTypes = new HashSet<Type>();
 
         public MongoDbContextBuilder()
         {
@@ -47,7 +48,7 @@ namespace BrandUp.MongoDB
         #region IMongoDbContextBuilder members
 
         public Type DbContextType { get; }
-        public string ConnectionString { get; set; } = "mongodb://localhost:27017";
+        public string ConnectionString { get; set; } = MongoDbDefaults.LocalConnectionString;
         public string DatabaseName { get; set; }
         public ConventionPack Conventions { get; } = new ConventionPack();
         public IEnumerable<MongoDbCollectionOptions> Collections => collections;
@@ -64,9 +65,9 @@ namespace BrandUp.MongoDB
             if (collectionDocumentTypes.ContainsKey(documentType))
                 throw new ArgumentException();
 
-            var documentAttribute = documentType.GetCustomAttribute<MongoDbDocumentAttribute>(false);
+            var documentAttribute = documentType.GetCustomAttribute<DocumentAttribute>(false);
             if (documentAttribute == null)
-                throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} not contain {nameof(MongoDbDocumentAttribute)} attribute.");
+                throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} not contain {nameof(DocumentAttribute)} attribute.");
 
             string collectionName = null;
             if (documentAttribute.CollectionName != null)
@@ -81,6 +82,8 @@ namespace BrandUp.MongoDB
             collections.Add(new MongoDbCollectionOptions(collectionName, documentType) { ContextType = documentAttribute.CollectionContextType });
             collectionDocumentTypes.Add(documentType, index);
             collectionNames.Add(collectionName.ToLower(), index);
+
+            AddDocumentType(documentType);
 
             return this;
         }
@@ -139,9 +142,26 @@ namespace BrandUp.MongoDB
             return (TContext)Activator.CreateInstance(dbContextType, options);
         }
 
+        private void AddDocumentType(Type type)
+        {
+            if (documentTypes.Contains(type) || type == typeof(object))
+                return;
+
+            documentTypes.Add(type);
+
+            foreach (var knownTypeAttribute in type.GetCustomAttributes<DocumentKnownTypeAttribute>(false))
+            {
+                if (!knownTypeAttribute.Type.IsSubclassOf(type))
+                    throw new InvalidOperationException($"Type {knownTypeAttribute.Type.FullName} is not overide {type.FullName}.");
+
+                AddDocumentType(knownTypeAttribute.Type);
+            }
+
+            AddDocumentType(type.BaseType);
+        }
         private void RegisterConventions(string name)
         {
-            ConventionRegistry.Register(name, Conventions, HasDocumentType);
+            ConventionRegistry.Register(name, Conventions, documentTypes.Contains);
         }
 
         public static string TrimCollectionNamePrefix(string name)

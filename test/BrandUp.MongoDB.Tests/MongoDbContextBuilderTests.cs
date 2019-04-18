@@ -74,6 +74,28 @@ namespace BrandUp.MongoDB.Tests
         }
 
         [Fact]
+        public void CheckConventionOfBaseType()
+        {
+            builder.UseIgnoreIfDefault(false);
+
+            Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfDefaultConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(Document));
+            Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+        }
+
+        [Fact]
+        public void CheckConventionOfKnownType()
+        {
+            builder.UseIgnoreIfDefault(false);
+
+            Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfDefaultConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(NewsDocument));
+            Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+        }
+
+        [Fact]
         public void Build()
         {
             var context = builder.Build();

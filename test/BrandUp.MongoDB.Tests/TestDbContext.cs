@@ -16,14 +16,25 @@ namespace BrandUp.MongoDB.Tests
         IMongoCollection<TaskDocument> Tasks { get; }
     }
 
-    [MongoDbDocument]
-    public class ArticleDocument
+    public class Document
     {
 
     }
 
-    [MongoDbDocument(CollectionName = "Tasks", CollectionContextType = typeof(TaskDocumentCollectionContext))]
-    public class TaskDocument
+    [Document]
+    [DocumentKnownType(typeof(NewsDocument))]
+    public class ArticleDocument : Document
+    {
+
+    }
+
+    public class NewsDocument : ArticleDocument
+    {
+
+    }
+
+    [Document(CollectionName = "Tasks", CollectionContextType = typeof(TaskDocumentCollectionContext))]
+    public class TaskDocument : Document
     {
 
     }
@@ -56,8 +67,8 @@ namespace BrandUp.MongoDB.Tests
         }
     }
 
-    [MongoDbDocument]
-    public class CommentDocument
+    [Document]
+    public class CommentDocument : Document
     {
 
     }
