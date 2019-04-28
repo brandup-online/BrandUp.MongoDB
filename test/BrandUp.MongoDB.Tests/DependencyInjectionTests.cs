@@ -47,7 +47,10 @@ namespace BrandUp.MongoDB.Tests
             var configuration = configurationBuilder.Build();
 
             var services = new ServiceCollection();
-            services.AddMongoDbContext<TestDbContext>(configuration);
+            services.AddMongoDbContext<TestDbContext>(configuration, options =>
+            {
+                options.UseFakeClientFactory();
+            });
 
             using (var scope = services.BuildServiceProvider())
             {
