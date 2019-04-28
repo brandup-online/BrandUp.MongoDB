@@ -1,35 +1,17 @@
 using Microsoft.Extensions.DependencyInjection;
-using System;
+using MongoDB.Bson.Serialization.Conventions;
+using System.Collections.Generic;
+using System.Linq;
 using Xunit;
 
 namespace BrandUp.MongoDB.Tests
 {
-    public class DependencyInjectionTests : IDisposable
+    public class DependencyInjectionTests
     {
-        private readonly ServiceProvider scope;
-
-        public DependencyInjectionTests()
-        {
-            var services = new ServiceCollection();
-
-            services.AddMongoDbContext<TestDbContext>(options =>
-            {
-                options.DatabaseName = "Test";
-                options.UseFakeClientFactory();
-            });
-
-            scope = services.BuildServiceProvider();
-        }
-
-        void IDisposable.Dispose()
-        {
-            scope.Dispose();
-        }
-
         #region Test methods
 
         [Fact]
-        public void AddMongoDbContext()
+        public void AddMongoDbContext_WithOptionsAction()
         {
             var services = new ServiceCollection();
 
@@ -39,11 +21,45 @@ namespace BrandUp.MongoDB.Tests
                 options.UseFakeClientFactory();
             });
 
-            var scope = services.BuildServiceProvider();
+            using (var scope = services.BuildServiceProvider())
+            {
+                var dbContext = scope.GetService<TestDbContext>();
 
-            var dbContext = scope.GetService<TestDbContext>();
+                Assert.NotNull(dbContext);
+            }
+        }
 
-            Assert.NotNull(dbContext);
+        [Fact]
+        public void AddMongoDbContext_WithConfiguration()
+        {
+            var configurationBuilder = new Microsoft.Extensions.Configuration.ConfigurationBuilder();
+            configurationBuilder.Add(new Microsoft.Extensions.Configuration.Memory.MemoryConfigurationSource
+            {
+                InitialData = new Dictionary<string, string> {
+                    { "ConnectionString", MongoDbDefaults.LocalConnectionString },
+                    { "DatabaseName", "test" },
+                    { "CamelCase", "true" },
+                    { "IgnoreIfNull", "true" },
+                    { "IgnoreIfDefault", "true" }
+                }
+            });
+
+            var configuration = configurationBuilder.Build();
+
+            var services = new ServiceCollection();
+            services.AddMongoDbContext<TestDbContext>(configuration);
+
+            using (var scope = services.BuildServiceProvider())
+            {
+                var dbContext = scope.GetService<TestDbContext>();
+
+                var pack = ConventionRegistry.Lookup(typeof(Document));
+                Assert.NotEmpty(pack.Conventions.OfType<CamelCaseElementNameConvention>());
+                Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+                Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+
+                Assert.Equal("test", dbContext.Database.DatabaseNamespace.DatabaseName);
+            }
         }
 
         [Fact]
@@ -58,11 +74,13 @@ namespace BrandUp.MongoDB.Tests
             });
             services.AddMongoDbContextExension<TestDbContext, IWorkerDbContext>();
 
-            var scope = services.BuildServiceProvider();
+            using (var scope = services.BuildServiceProvider())
+            {
 
-            var dbContext = scope.GetService<IWorkerDbContext>();
+                var dbContext = scope.GetService<IWorkerDbContext>();
 
-            Assert.NotNull(dbContext);
+                Assert.NotNull(dbContext);
+            }
         }
 
         #endregion
