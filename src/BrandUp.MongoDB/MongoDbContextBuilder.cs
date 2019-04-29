@@ -119,7 +119,7 @@ namespace BrandUp.MongoDB
             var options = new MongoDbContextOptions
             {
                 Url = mongoUrl,
-                ClientFactory = ClientFactory ?? new MongoDbClientFactory()
+                ClientFactory = ClientFactory ?? MongoDbClientFactory.Instance
             };
 
             options.Collections.AddRange(collections);
