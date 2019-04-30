@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Conventions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization.Conventions;
 using System.Linq;
 using Xunit;
 
@@ -7,6 +8,7 @@ namespace BrandUp.MongoDB.Tests
     public class MongoDbContextBuilderTests
     {
         private readonly MongoDbContextBuilder<TestDbContext> builder;
+        private readonly TestDbContext dbContext;
 
         public MongoDbContextBuilderTests()
         {
@@ -17,10 +19,28 @@ namespace BrandUp.MongoDB.Tests
 
             builder.UseFakeClientFactory();
 
-            builder.Build();
+            var services = new ServiceCollection();
+            services.AddSingleton<TestService>();
+            var provider = services.BuildServiceProvider();
+
+            dbContext = builder.Build(provider);
         }
 
         #region Test methods
+
+        [Fact]
+        public void CheckBuild()
+        {
+            var acticleCollectionContext = dbContext.GetCollectionContext<ArticleDocument>();
+            var taskCollectionContext = dbContext.GetCollectionContext<TaskDocument>();
+
+            Assert.IsAssignableFrom<MongoDbCollectionContext<ArticleDocument>>(acticleCollectionContext);
+            Assert.IsAssignableFrom<TaskDocumentCollectionContext>(taskCollectionContext);
+
+            Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsGetCollectionSettings);
+            Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsGetCreationOptions);
+            Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsOnSetupCollection);
+        }
 
         [Fact]
         public void CheckCollections()
@@ -93,22 +113,6 @@ namespace BrandUp.MongoDB.Tests
 
             var pack = ConventionRegistry.Lookup(typeof(NewsDocument));
             Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
-        }
-
-        [Fact]
-        public void Build()
-        {
-            var context = builder.Build();
-
-            var acticleCollectionContext = context.GetCollectionContext<ArticleDocument>();
-            var taskCollectionContext = context.GetCollectionContext<TaskDocument>();
-
-            Assert.IsAssignableFrom<MongoDbCollectionContext<ArticleDocument>>(acticleCollectionContext);
-            Assert.IsAssignableFrom<TaskDocumentCollectionContext>(taskCollectionContext);
-
-            Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsGetCollectionSettings);
-            Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsGetCreationOptions);
-            Assert.True(((TaskDocumentCollectionContext)taskCollectionContext).IsOnSetupCollection);
         }
 
         #endregion

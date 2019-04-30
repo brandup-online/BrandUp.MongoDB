@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace BrandUp.MongoDB
@@ -101,7 +102,7 @@ namespace BrandUp.MongoDB
 
         #endregion
 
-        public MongoDbContextOptions BuildOptions()
+        private MongoDbContextOptions BuildOptions()
         {
             if (ConnectionString == null)
                 throw new InvalidOperationException($"Not set {nameof(ConnectionString)} value.");
@@ -127,10 +128,9 @@ namespace BrandUp.MongoDB
             return options;
         }
 
-        public TContext Build()
+        public TContext Build(IServiceProvider provider)
         {
-            var options = BuildOptions();
-
+            var dbContextOptions = BuildOptions();
             var dbContextType = DbContextType;
             var dbContextName = dbContextType.FullName;
 
@@ -139,7 +139,21 @@ namespace BrandUp.MongoDB
                 RegisterConventions(dbContextName);
             }
 
-            return (TContext)Activator.CreateInstance(dbContextType, options);
+            var constructor = dbContextType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
+
+            var constructorParamsInfo = constructor.GetParameters();
+            var constratorParams = new object[constructorParamsInfo.Length];
+            var i = 0;
+            foreach (var p in constructorParamsInfo)
+            {
+                if (p.ParameterType == typeof(MongoDbContextOptions))
+                    constratorParams[i] = dbContextOptions;
+                else
+                    constratorParams[i] = provider.GetService(p.ParameterType);
+                i++;
+            }
+
+            return (TContext)constructor.Invoke(constratorParams);
         }
 
         private void AddDocumentType(Type type)

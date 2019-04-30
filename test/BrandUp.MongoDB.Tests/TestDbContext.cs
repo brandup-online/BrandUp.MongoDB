@@ -5,10 +5,20 @@ namespace BrandUp.MongoDB.Tests
 {
     public class TestDbContext : MongoDbContext, IWorkerDbContext
     {
-        public TestDbContext(MongoDbContextOptions options) : base(options) { }
+        private readonly TestService testService;
+
+        public TestDbContext(MongoDbContextOptions options, TestService testService) : base(options)
+        {
+            this.testService = testService ?? throw new System.ArgumentNullException(nameof(testService));
+        }
 
         public IMongoCollection<ArticleDocument> Articles => GetCollection<ArticleDocument>();
         public IMongoCollection<TaskDocument> Tasks => GetCollection<TaskDocument>();
+    }
+
+    public class TestService
+    {
+
     }
 
     public interface IWorkerDbContext
@@ -59,7 +69,7 @@ namespace BrandUp.MongoDB.Tests
             return base.GetCreationOptions();
         }
 
-        protected override void OnSetupCollection(CancellationToken cancellationToken = default(CancellationToken))
+        protected override void OnSetupCollection(CancellationToken cancellationToken = default)
         {
             IsOnSetupCollection = true;
 

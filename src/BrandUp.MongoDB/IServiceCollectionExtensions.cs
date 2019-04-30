@@ -47,10 +47,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             optionsAction.Invoke(optionsBuilder);
 
-            services.AddSingleton(s =>
-            {
-                return optionsBuilder.Build();
-            });
+            services.AddSingleton(optionsBuilder.Build);
 
             return services;
         }

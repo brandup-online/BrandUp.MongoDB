@@ -14,6 +14,7 @@ namespace BrandUp.MongoDB.Tests
         public void AddMongoDbContext_WithOptionsAction()
         {
             var services = new ServiceCollection();
+            services.AddSingleton<TestService>();
 
             services.AddMongoDbContext<TestDbContext>(options =>
             {
@@ -47,6 +48,7 @@ namespace BrandUp.MongoDB.Tests
             var configuration = configurationBuilder.Build();
 
             var services = new ServiceCollection();
+            services.AddSingleton<TestService>();
             services.AddMongoDbContext<TestDbContext>(configuration, options =>
             {
                 options.UseFakeClientFactory();
@@ -69,6 +71,7 @@ namespace BrandUp.MongoDB.Tests
         public void AddMongoDbContextExension()
         {
             var services = new ServiceCollection();
+            services.AddSingleton<TestService>();
 
             services.AddMongoDbContext<TestDbContext>(options =>
             {
