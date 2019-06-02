@@ -1,11 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Conventions;
+using System;
 using System.Linq;
 using Xunit;
 
 namespace BrandUp.MongoDB.Tests
 {
-    public class MongoDbContextBuilderTests
+    public class MongoDbContextBuilderTests : IDisposable
     {
         private readonly MongoDbContextBuilder<TestDbContext> builder;
         private readonly TestDbContext dbContext;
@@ -24,6 +25,11 @@ namespace BrandUp.MongoDB.Tests
             var provider = services.BuildServiceProvider();
 
             dbContext = builder.Build(provider);
+        }
+
+        public void Dispose()
+        {
+            dbContext.Dispose();
         }
 
         #region Test methods
@@ -46,8 +52,11 @@ namespace BrandUp.MongoDB.Tests
         public void CheckCollections()
         {
             Assert.Equal(2, builder.Collections.Count());
-            Assert.True(builder.HasDocumentType(typeof(ArticleDocument)));
-            Assert.True(builder.HasDocumentType(typeof(TaskDocument)));
+            Assert.True(builder.HasCollectionDocumentType(typeof(ArticleDocument)));
+            Assert.True(builder.HasCollectionDocumentType(typeof(TaskDocument)));
+            Assert.True(builder.HasDocumentType(typeof(SeoOptions)));
+            Assert.True(builder.HasDocumentType(typeof(Tag)));
+            Assert.True(builder.HasDocumentType(typeof(CommentDocument)));
             Assert.True(builder.HasCollectionName("Article"));
             Assert.True(builder.HasCollectionName("Tasks"));
         }
@@ -57,7 +66,7 @@ namespace BrandUp.MongoDB.Tests
         {
             builder.AddCollection(typeof(CommentDocument));
 
-            Assert.True(builder.HasDocumentType(typeof(CommentDocument)));
+            Assert.True(builder.HasCollectionDocumentType(typeof(CommentDocument)));
         }
 
         [Fact]

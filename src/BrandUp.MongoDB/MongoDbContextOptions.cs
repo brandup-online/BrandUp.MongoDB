@@ -9,6 +9,7 @@ namespace BrandUp.MongoDB
         public IMongoDbClientFactory ClientFactory { get; set; }
         public MongoUrl Url { get; set; }
         public List<MongoDbCollectionOptions> Collections { get; } = new List<MongoDbCollectionOptions>();
+        internal Action DisposeContextAction { get; set; }
     }
 
     public class MongoDbCollectionOptions

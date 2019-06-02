@@ -1,6 +1,7 @@
 ﻿using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -16,7 +17,7 @@ namespace BrandUp.MongoDB
         IEnumerable<MongoDbCollectionOptions> Collections { get; }
         IMongoDbClientFactory ClientFactory { get; set; }
         IMongoDbContextBuilder AddCollection(Type documentType);
-        bool HasDocumentType(Type documentType);
+        bool HasCollectionDocumentType(Type documentType);
         bool HasCollectionName(string name);
     }
 
@@ -28,6 +29,7 @@ namespace BrandUp.MongoDB
         private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
         private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
         private readonly HashSet<Type> documentTypes = new HashSet<Type>();
+        private TContext dbContext;
 
         public MongoDbContextBuilder()
         {
@@ -70,7 +72,7 @@ namespace BrandUp.MongoDB
             if (documentAttribute == null)
                 throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} not contain {nameof(DocumentAttribute)} attribute.");
 
-            string collectionName = null;
+            string collectionName;
             if (documentAttribute.CollectionName != null)
                 collectionName = documentAttribute.CollectionName;
             else
@@ -88,9 +90,13 @@ namespace BrandUp.MongoDB
 
             return this;
         }
-        public bool HasDocumentType(Type documentType)
+        public bool HasCollectionDocumentType(Type documentType)
         {
             return collectionDocumentTypes.ContainsKey(documentType);
+        }
+        public bool HasDocumentType(Type documentType)
+        {
+            return documentTypes.Contains(documentType);
         }
         public bool HasCollectionName(string name)
         {
@@ -130,9 +136,17 @@ namespace BrandUp.MongoDB
 
         public TContext Build(IServiceProvider provider)
         {
+            if (dbContext != null)
+                throw new InvalidOperationException();
+
             var dbContextOptions = BuildOptions();
             var dbContextType = DbContextType;
             var dbContextName = dbContextType.FullName;
+
+            dbContextOptions.DisposeContextAction = () =>
+            {
+                ConventionRegistry.Remove(dbContextName);
+            };
 
             lock (_initializationLock)
             {
@@ -153,7 +167,9 @@ namespace BrandUp.MongoDB
                 i++;
             }
 
-            return (TContext)constructor.Invoke(constratorParams);
+            dbContext = (TContext)constructor.Invoke(constratorParams);
+
+            return dbContext;
         }
 
         private void AddDocumentType(Type type)
@@ -162,6 +178,35 @@ namespace BrandUp.MongoDB
                 return;
 
             documentTypes.Add(type);
+
+            foreach (var propertyInfo in type.GetProperties(BindingFlags.Instance | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.GetProperty | BindingFlags.SetProperty))
+            {
+                var propertyType = propertyInfo.PropertyType;
+                var code = Type.GetTypeCode(propertyType);
+                switch (code)
+                {
+                    case TypeCode.Object:
+                        {
+                            if (propertyType.IsGenericType)
+                            {
+                                if (typeof(IEnumerable).IsAssignableFrom(propertyType) || propertyType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                                {
+                                    AddDocumentType(propertyType.GenericTypeArguments[0]);
+                                    break;
+                                }
+                            }
+                            else if (propertyType.IsArray)
+                            {
+                                AddDocumentType(propertyType.GetElementType());
+                                break;
+                            }
+
+                            AddDocumentType(propertyType);
+
+                            break;
+                        }
+                }
+            }
 
             foreach (var knownTypeAttribute in type.GetCustomAttributes<DocumentKnownTypeAttribute>(false))
             {

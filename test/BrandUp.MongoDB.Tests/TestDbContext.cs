@@ -1,4 +1,5 @@
 ﻿using MongoDB.Driver;
+using System.Collections.Generic;
 using System.Threading;
 
 namespace BrandUp.MongoDB.Tests
@@ -35,13 +36,27 @@ namespace BrandUp.MongoDB.Tests
     [DocumentKnownType(typeof(NewsDocument))]
     public class ArticleDocument : Document
     {
-
+        public SeoOptions Seo { get; set; }
+        public List<Tag> Tags { get; set; }
+        public CommentDocument[] Comments { get; set; }
     }
 
     public class NewsDocument : ArticleDocument
     {
 
     }
+
+    public class SeoOptions
+    {
+
+    }
+
+    public class Tag
+    {
+
+    }
+
+
 
     [Document(CollectionName = "Tasks", CollectionContextType = typeof(TaskDocumentCollectionContext))]
     public class TaskDocument : Document

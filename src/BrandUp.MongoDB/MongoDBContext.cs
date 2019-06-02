@@ -9,6 +9,7 @@ namespace BrandUp.MongoDB
         private readonly List<IMongoDbCollectionContext> collections = new List<IMongoDbCollectionContext>();
         private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
         private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
+        Action disposeContextAction;
 
         public IMongoDatabase Database { get; }
 
@@ -19,10 +20,9 @@ namespace BrandUp.MongoDB
             if (options.ClientFactory == null)
                 throw new ArgumentNullException(nameof(options.ClientFactory));
 
+            disposeContextAction = options.DisposeContextAction;
             var client = options.ClientFactory.CreateClient(options.Url);
             Database = client.GetDatabase(options.Url.DatabaseName);
-
-            var contextType = GetType();
 
             foreach (var collectionOptions in options.Collections)
             {
@@ -102,6 +102,7 @@ namespace BrandUp.MongoDB
 
         public void Dispose()
         {
+            disposeContextAction();
         }
 
         #endregion
