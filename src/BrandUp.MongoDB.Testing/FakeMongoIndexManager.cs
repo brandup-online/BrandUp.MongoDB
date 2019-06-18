@@ -22,6 +22,20 @@ namespace BrandUp.MongoDB.Testing
         public IBsonSerializer<TDocument> DocumentSerializer => collection.DocumentSerializer;
         public MongoCollectionSettings Settings => collection.Settings;
 
+        private string Insert(CreateIndexModel<TDocument> indexModel)
+        {
+            if (indexModel == null)
+                throw new ArgumentNullException(nameof(indexModel));
+
+            var name = indexModel.Options?.Name;
+            if (name == null)
+                name = $"index{indexes.Count}";
+
+            indexes.Add(name.ToLower(), new BsonDocument { new BsonElement("name", name) });
+
+            return name;
+        }
+
         public IEnumerable<string> CreateMany(IEnumerable<CreateIndexModel<TDocument>> models, CancellationToken cancellationToken = default)
         {
             return CreateMany(null, models, null, cancellationToken);
@@ -36,7 +50,12 @@ namespace BrandUp.MongoDB.Testing
         }
         public IEnumerable<string> CreateMany(IClientSessionHandle session, IEnumerable<CreateIndexModel<TDocument>> models, CreateManyIndexesOptions options, CancellationToken cancellationToken = default)
         {
-            return Array.Empty<string>();
+            var names = new List<string>();
+
+            foreach (var model in models)
+                names.Add(Insert(model));
+
+            return names;
         }
 
         public Task<IEnumerable<string>> CreateManyAsync(IEnumerable<CreateIndexModel<TDocument>> models, CancellationToken cancellationToken = default)
@@ -70,7 +89,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public string CreateOne(IClientSessionHandle session, CreateIndexModel<TDocument> model, CreateOneIndexOptions options = null, CancellationToken cancellationToken = default)
         {
-            return null;
+            return Insert(model);
         }
 
         public Task<string> CreateOneAsync(CreateIndexModel<TDocument> model, CreateOneIndexOptions options = null, CancellationToken cancellationToken = default)
@@ -92,76 +111,75 @@ namespace BrandUp.MongoDB.Testing
 
         public void DropAll(DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropAll(null, options, cancellationToken);
         }
         public void DropAll(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropAll(null, null, cancellationToken);
         }
         public void DropAll(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropAll(session, null, cancellationToken);
         }
         public void DropAll(IClientSessionHandle session, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            indexes.Clear();
         }
 
         public Task DropAllAsync(DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return DropAllAsync(null, options, cancellationToken);
         }
         public Task DropAllAsync(CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return DropAllAsync(null, null, cancellationToken);
         }
         public Task DropAllAsync(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return DropAllAsync(session, null, cancellationToken);
         }
         public Task DropAllAsync(IClientSessionHandle session, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropAll(session, options, cancellationToken);
+
+            return Task.CompletedTask;
         }
 
         public void DropOne(string name, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropOne(null, name, null, cancellationToken);
         }
-
         public void DropOne(string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropOne(null, name, options, cancellationToken);
         }
-
         public void DropOne(IClientSessionHandle session, string name, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropOne(session, name, null, cancellationToken);
         }
-
         public void DropOne(IClientSessionHandle session, string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            if (!indexes.Remove(name))
+                throw new InvalidOperationException();
         }
 
         public Task DropOneAsync(string name, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return DropOneAsync(null, name, null, cancellationToken);
         }
-
         public Task DropOneAsync(string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return DropOneAsync(null, name, options, cancellationToken);
         }
-
         public Task DropOneAsync(IClientSessionHandle session, string name, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            return DropOneAsync(session, name, null, cancellationToken);
         }
-
         public Task DropOneAsync(IClientSessionHandle session, string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            DropOne(session, name, options, cancellationToken);
+
+            return Task.CompletedTask;
         }
 
         public IAsyncCursor<BsonDocument> List(CancellationToken cancellationToken = default)

@@ -27,6 +27,8 @@ namespace BrandUp.MongoDB.Tests
                 var dbContext = scope.GetService<TestDbContext>();
 
                 Assert.NotNull(dbContext);
+
+                dbContext.Dispose();
             }
         }
 
@@ -64,6 +66,8 @@ namespace BrandUp.MongoDB.Tests
                 Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
 
                 Assert.Equal("test", dbContext.Database.DatabaseNamespace.DatabaseName);
+
+                dbContext.Dispose();
             }
         }
 
@@ -82,7 +86,6 @@ namespace BrandUp.MongoDB.Tests
 
             using (var scope = services.BuildServiceProvider())
             {
-
                 var dbContext = scope.GetService<IWorkerDbContext>();
 
                 Assert.NotNull(dbContext);

@@ -23,7 +23,7 @@ namespace BrandUp.MongoDB.Testing
             this.database = database ?? throw new ArgumentNullException(nameof(database));
             Settings = settings ?? throw new ArgumentNullException(nameof(settings));
             CollectionNamespace = new CollectionNamespace(database.DatabaseNamespace, name);
-            DocumentSerializer = settings.SerializerRegistry.GetSerializer<TDocument>();
+            DocumentSerializer = BsonSerializer.LookupSerializer<TDocument>();
             indexManager = new FakeMongoIndexManager<TDocument>(this);
         }
 

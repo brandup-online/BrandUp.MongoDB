@@ -14,19 +14,16 @@ namespace BrandUp.MongoDB.Testing
         {
             this.items.AddRange(items);
         }
-
         public FakeAsyncCursor(IEnumerable<T> items)
         {
             this.items.AddRange(items);
         }
 
-        public IEnumerable<T> Current => items;
-
+        public IEnumerable<T> Current => new T[] { items[index] };
         public void Dispose()
         {
         }
-
-        public bool MoveNext(CancellationToken cancellationToken = default(CancellationToken))
+        public bool MoveNext(CancellationToken cancellationToken = default)
         {
             if (index == items.Count - 1)
                 return false;
@@ -34,8 +31,7 @@ namespace BrandUp.MongoDB.Testing
             index++;
             return true;
         }
-
-        public Task<bool> MoveNextAsync(CancellationToken cancellationToken = default(CancellationToken))
+        public Task<bool> MoveNextAsync(CancellationToken cancellationToken = default)
         {
             return Task.FromResult(MoveNext(cancellationToken));
         }

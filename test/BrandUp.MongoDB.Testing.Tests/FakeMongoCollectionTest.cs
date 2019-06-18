@@ -123,12 +123,12 @@ namespace BrandUp.MongoDB.Testing.Tests
 
             Assert.Single(result);
         }
-    }
 
-    public class Document
-    {
-        [BsonId]
-        public Guid Id { get; set; }
-        public string Name { get; set; }
+        public class Document
+        {
+            [BsonId]
+            public Guid Id { get; set; }
+            public string Name { get; set; }
+        }
     }
 }

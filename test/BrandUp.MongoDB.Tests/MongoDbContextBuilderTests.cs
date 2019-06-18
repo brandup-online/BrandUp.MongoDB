@@ -1,12 +1,12 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Conventions;
-using System;
 using System.Linq;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace BrandUp.MongoDB.Tests
 {
-    public class MongoDbContextBuilderTests : IDisposable
+    public class MongoDbContextBuilderTests : IAsyncLifetime
     {
         private readonly MongoDbContextBuilder<TestDbContext> builder;
         private readonly TestDbContext dbContext;
@@ -27,9 +27,16 @@ namespace BrandUp.MongoDB.Tests
             dbContext = builder.Build(provider);
         }
 
-        public void Dispose()
+        public Task InitializeAsync()
+        {
+            return Task.CompletedTask;
+        }
+
+        public Task DisposeAsync()
         {
             dbContext.Dispose();
+
+            return Task.CompletedTask;
         }
 
         #region Test methods
