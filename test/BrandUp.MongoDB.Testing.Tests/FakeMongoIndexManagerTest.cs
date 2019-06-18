@@ -26,7 +26,6 @@ namespace BrandUp.MongoDB.Testing.Tests
             Assert.Equal("index0", name);
         }
 
-
         [Fact]
         public void CreateMany()
         {
@@ -37,6 +36,31 @@ namespace BrandUp.MongoDB.Testing.Tests
 
             var indexes = collection.Indexes.List().ToList();
             Assert.Equal(2, indexes.Count);
+        }
+
+        [Fact]
+        public void DropAll()
+        {
+            collection.Indexes.CreateMany(new CreateIndexModel<Document>[] {
+                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)),
+                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Header))
+            });
+
+            collection.Indexes.DropAll();
+
+            var indexes = collection.Indexes.List().ToList();
+            Assert.Empty(indexes);
+        }
+
+        [Fact]
+        public void DropOne()
+        {
+            var name = collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)));
+
+            collection.Indexes.DropOne(name);
+
+            var indexes = collection.Indexes.List().ToList();
+            Assert.Empty(indexes);
         }
 
         public class Document
