@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson;
+using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
 using System;
@@ -12,8 +13,9 @@ namespace BrandUp.MongoDB.Testing
     public class FakeMongoCollection<TDocument> : IMongoCollection<TDocument>, IFakeMongoCollection
     {
         readonly FakeMongoDatabase database;
-        readonly List<TDocument> documents = new List<TDocument>();
-        readonly Dictionary<string, int> ids = new Dictionary<string, int>();
+        readonly List<BsonDocument> docs = new List<BsonDocument>();
+        readonly Dictionary<BsonValue, int> docIds = new Dictionary<BsonValue, int>();
+        readonly List<TDocument> docObjects = new List<TDocument>();
         readonly FakeMongoIndexManager<TDocument> indexManager;
 
         public FakeMongoCollection(FakeMongoDatabase database, string name, MongoCollectionSettings settings)
@@ -30,6 +32,126 @@ namespace BrandUp.MongoDB.Testing
         public IBsonSerializer<TDocument> DocumentSerializer { get; }
         public IMongoIndexManager<TDocument> Indexes => indexManager;
         public MongoCollectionSettings Settings { get; }
+
+        #region Helpers
+
+        private List<TDocument> Filter(FilterDefinition<TDocument> filter)
+        {
+            var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
+            return docObjects.Where(ef.Expression.Compile()).ToList();
+        }
+        private void InsertDocument(TDocument document)
+        {
+            if (document == null)
+                throw new ArgumentNullException(nameof(document));
+
+            var bsonDocument = new BsonDocument();
+            using (var bsonReader = new BsonDocumentWriter(bsonDocument))
+            {
+                var bsonSerializationContext = BsonSerializationContext.CreateRoot(bsonReader);
+                DocumentSerializer.Serialize(bsonSerializationContext, default, document);
+            }
+
+            var id = GetDocumentIdValue(bsonDocument);
+            if (docIds.ContainsKey(id))
+                throw new InvalidOperationException($"Document by id {id} already exists.");
+
+            var index = docIds.Count;
+            docIds.Add(id, index);
+            docs.Add(bsonDocument);
+            docObjects.Add(document);
+        }
+        private UpdateResult UpdateDocuments(IEnumerable<TDocument> documents, UpdateDefinition<TDocument> update)
+        {
+            var matchedCount = 0;
+            var modifiedCount = 0;
+            var bsobUpdate = update.Render(DocumentSerializer, Settings.SerializerRegistry);
+
+            foreach (var docObject in documents)
+            {
+                var docIndex = docObjects.IndexOf(docObject);
+                if (docIndex == -1)
+                    throw new InvalidOperationException();
+                var doc = docs[docIndex];
+                var docId = GetDocumentIdValue(doc);
+
+                var updatedDoc = doc.DeepClone().AsBsonDocument;
+                foreach (var updateElement in bsobUpdate)
+                {
+                    var operationName = updateElement.Name;
+                    switch (operationName)
+                    {
+                        case "$set":
+                            {
+                                var setDoc = updateElement.Value.AsBsonDocument;
+                                updatedDoc = updatedDoc.Merge(setDoc, true);
+                                modifiedCount += setDoc.ElementCount;
+                                break;
+                            }
+                        default:
+                            throw new NotSupportedException($"Not supported update operation {operationName}.");
+                    }
+                }
+
+                var updatedId = GetDocumentIdValue(updatedDoc);
+
+                using (var bsonReader = new BsonDocumentReader(updatedDoc))
+                {
+                    var bsonDeserializationContext = BsonDeserializationContext.CreateRoot(bsonReader);
+                    var updatedDocObject = DocumentSerializer.Deserialize(bsonDeserializationContext);
+
+                    docObjects[docIndex] = updatedDocObject;
+                }
+
+                if (updatedId != docId)
+                {
+                    if (!docIds.Remove(docId))
+                        throw new InvalidOperationException();
+                    docIds.Add(updatedId, docIndex);
+                }
+
+                matchedCount++;
+            }
+
+            return new UpdateResult.Acknowledged(matchedCount, modifiedCount, null);
+        }
+        private DeleteResult DeleteDocuments(IEnumerable<TDocument> documents)
+        {
+            var deletedCound = 0;
+
+            foreach (var docObject in documents)
+            {
+                var docIndex = docObjects.IndexOf(docObject);
+                if (docIndex == -1)
+                    throw new InvalidOperationException();
+
+                var doc = docs[docIndex];
+                var docId = GetDocumentIdValue(doc);
+
+                if (!docIds.Remove(docId))
+                    throw new InvalidOperationException();
+                docs.RemoveAt(docIndex);
+                docObjects.RemoveAt(docIndex);
+
+                deletedCound++;
+            }
+
+            return new DeleteResult.Acknowledged(deletedCound);
+        }
+        private static BsonValue GetDocumentIdValue(BsonDocument document)
+        {
+            if (!document.TryGetValue("_id", out BsonValue idValue))
+                throw new InvalidOperationException("Not found id value in bson document.");
+            return idValue;
+        }
+        private static object GetDocumentId(BsonDocument document)
+        {
+            var idValue = GetDocumentIdValue(document);
+
+            return BsonTypeMapper.MapToDotNetValue(idValue);
+        }
+
+        #endregion
 
         #region Aggregate members
 
@@ -105,8 +227,11 @@ namespace BrandUp.MongoDB.Testing
         }
         public long CountDocuments(IClientSessionHandle session, FilterDefinition<TDocument> filter, CountOptions options = null, CancellationToken cancellationToken = default)
         {
+            if (filter == null)
+                throw new ArgumentNullException(nameof(filter));
+
             var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-            return documents.Count(ef.Expression.Compile());
+            return docObjects.Count(ef.Expression.Compile());
         }
         public Task<long> CountDocumentsAsync(FilterDefinition<TDocument> filter, CountOptions options = null, CancellationToken cancellationToken = default)
         {
@@ -131,19 +256,8 @@ namespace BrandUp.MongoDB.Testing
         }
         public DeleteResult DeleteMany(IClientSessionHandle session, FilterDefinition<TDocument> filter, DeleteOptions options = null, CancellationToken cancellationToken = default)
         {
-            var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-
-            long deletedCound = 0;
-            var docs = documents.Where(ef.Expression.Compile()).ToList();
-            foreach (var d in docs)
-            {
-                if (documents.Remove(d))
-                    deletedCound++;
-            }
-
-            if (deletedCound > 0)
-                return new DeleteResult.Acknowledged(deletedCound);
-            return DeleteResult.Unacknowledged.Instance;
+            var filteredDocs = Filter(filter);
+            return DeleteDocuments(filteredDocs);
         }
         public Task<DeleteResult> DeleteManyAsync(FilterDefinition<TDocument> filter, CancellationToken cancellationToken = default)
         {
@@ -172,21 +286,11 @@ namespace BrandUp.MongoDB.Testing
         }
         public DeleteResult DeleteOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, DeleteOptions options = null, CancellationToken cancellationToken = default)
         {
-            var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-
-            long deletedCound = 0;
-            var docs = documents.Where(ef.Expression.Compile()).ToList();
-            if (docs.Count > 1)
+            var filteredDocs = Filter(filter);
+            if (filteredDocs.Count > 1)
                 throw new InvalidOperationException();
-            foreach (var d in docs)
-            {
-                if (documents.Remove(d))
-                    deletedCound++;
-            }
 
-            if (deletedCound > 0)
-                return new DeleteResult.Acknowledged(deletedCound);
-            return DeleteResult.Unacknowledged.Instance;
+            return DeleteDocuments(filteredDocs);
         }
         public Task<DeleteResult> DeleteOneAsync(FilterDefinition<TDocument> filter, CancellationToken cancellationToken = default)
         {
@@ -228,7 +332,7 @@ namespace BrandUp.MongoDB.Testing
 
         public long EstimatedDocumentCount(EstimatedDocumentCountOptions options = null, CancellationToken cancellationToken = default)
         {
-            return documents.Count;
+            return docs.Count;
         }
         public Task<long> EstimatedDocumentCountAsync(EstimatedDocumentCountOptions options = null, CancellationToken cancellationToken = default)
         {
@@ -246,7 +350,8 @@ namespace BrandUp.MongoDB.Testing
         public IAsyncCursor<TProjection> FindSync<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOptions<TDocument, TProjection> options = null, CancellationToken cancellationToken = default)
         {
             var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-            var docs = documents.Where(ef.Expression.Compile()).OfType<TProjection>().ToList();
+            var docs = docObjects.Where(ef.Expression.Compile()).OfType<TProjection>().ToList();
+
             return new FakeAsyncCursor<TProjection>(docs);
         }
         public Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(FilterDefinition<TDocument> filter, FindOptions<TDocument, TProjection> options = null, CancellationToken cancellationToken = default)
@@ -270,7 +375,7 @@ namespace BrandUp.MongoDB.Testing
         {
             var filded = FindSync<TDocument>(session, filter, null, cancellationToken);
             var doc = filded.SingleOrDefault(cancellationToken);
-            if (documents.Remove(doc))
+            if (docObjects.Remove(doc))
                 throw new Exception();
             return (TProjection)(object)doc;
         }
@@ -335,7 +440,11 @@ namespace BrandUp.MongoDB.Testing
         }
         public void InsertMany(IClientSessionHandle session, IEnumerable<TDocument> documents, InsertManyOptions options = null, CancellationToken cancellationToken = default)
         {
-            this.documents.AddRange(documents);
+            if (documents == null)
+                throw new ArgumentNullException(nameof(documents));
+
+            foreach (var document in documents)
+                InsertDocument(document);
         }
         public Task InsertManyAsync(IEnumerable<TDocument> documents, InsertManyOptions options = null, CancellationToken cancellationToken = default)
         {
@@ -358,7 +467,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public void InsertOne(IClientSessionHandle session, TDocument document, InsertOneOptions options = null, CancellationToken cancellationToken = default)
         {
-            documents.Add(document);
+            InsertDocument(document);
         }
         public Task InsertOneAsync(TDocument document, CancellationToken _cancellationToken)
         {
@@ -411,15 +520,39 @@ namespace BrandUp.MongoDB.Testing
         }
         public ReplaceOneResult ReplaceOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-            var doc = documents.Where(ef.Expression.Compile()).FirstOrDefault();
-            var index = documents.IndexOf(doc);
-            if (index != -1)
+            var filteredDocs = Filter(filter);
+            if (filteredDocs.Count > 1)
+                throw new InvalidOperationException();
+            else if (filteredDocs.Count == 0)
+                return ReplaceOneResult.Unacknowledged.Instance;
+
+            var docObject = filteredDocs[0];
+            var docIndex = docObjects.IndexOf(docObject);
+            if (docIndex == -1)
+                throw new InvalidOperationException();
+            var doc = docs[docIndex];
+            var docId = GetDocumentIdValue(doc);
+
+            var replacedDoc = new BsonDocument();
+            using (var bsonReader = new BsonDocumentWriter(replacedDoc))
             {
-                documents[index] = replacement;
-                return new ReplaceOneResult.Acknowledged(1, 1, BsonValue.Create(0));
+                var bsonSerializationContext = BsonSerializationContext.CreateRoot(bsonReader);
+                DocumentSerializer.Serialize(bsonSerializationContext, default, docObject);
             }
-            return ReplaceOneResult.Unacknowledged.Instance;
+
+            var replacedDocId = GetDocumentIdValue(replacedDoc);
+
+            if (replacedDocId != docId)
+            {
+                if (!docIds.Remove(docId))
+                    throw new InvalidOperationException();
+                docIds.Add(replacedDocId, docIndex);
+            }
+
+            docs[docIndex] = replacedDoc;
+            docObjects[docIndex] = replacement;
+
+            return new ReplaceOneResult.Acknowledged(1, 1, replacedDocId);
         }
         public Task<ReplaceOneResult> ReplaceOneAsync(FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
@@ -436,19 +569,26 @@ namespace BrandUp.MongoDB.Testing
 
         public UpdateResult UpdateMany(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return UpdateMany(null, filter, update, options, cancellationToken);
         }
         public UpdateResult UpdateMany(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (filter == null)
+                throw new ArgumentNullException(nameof(filter));
+            if (update == null)
+                throw new ArgumentNullException(nameof(update));
+
+            var expressionFilter = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
+            var docs = docObjects.Where(expressionFilter.Expression.Compile()).ToList();
+            return UpdateDocuments(docs, update);
         }
         public Task<UpdateResult> UpdateManyAsync(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return UpdateManyAsync(null, filter, update, options, cancellationToken);
         }
         public Task<UpdateResult> UpdateManyAsync(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(UpdateMany(session, filter, update, options, cancellationToken));
         }
 
         #endregion
@@ -457,19 +597,25 @@ namespace BrandUp.MongoDB.Testing
 
         public UpdateResult UpdateOne(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return UpdateOne(null, filter, update, options, cancellationToken);
         }
         public UpdateResult UpdateOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            if (update == null)
+                throw new ArgumentNullException(nameof(update));
+
+            var docs = Filter(filter);
+            if (docs.Count > 1)
+                throw new InvalidOperationException();
+            return UpdateDocuments(docs, update);
         }
         public Task<UpdateResult> UpdateOneAsync(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return UpdateOneAsync(null, filter, update, options, cancellationToken);
         }
         public Task<UpdateResult> UpdateOneAsync(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(UpdateOne(session, filter, update, options, cancellationToken));
         }
 
         #endregion
