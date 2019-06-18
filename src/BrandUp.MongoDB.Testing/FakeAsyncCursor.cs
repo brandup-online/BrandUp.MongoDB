@@ -15,6 +15,11 @@ namespace BrandUp.MongoDB.Testing
             this.items.AddRange(items);
         }
 
+        public FakeAsyncCursor(IEnumerable<T> items)
+        {
+            this.items.AddRange(items);
+        }
+
         public IEnumerable<T> Current => items;
 
         public void Dispose()

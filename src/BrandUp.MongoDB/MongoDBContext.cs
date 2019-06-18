@@ -9,7 +9,7 @@ namespace BrandUp.MongoDB
         private readonly List<IMongoDbCollectionContext> collections = new List<IMongoDbCollectionContext>();
         private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
         private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
-        Action disposeContextAction;
+        readonly Action disposeContextAction;
 
         public IMongoDatabase Database { get; }
 
