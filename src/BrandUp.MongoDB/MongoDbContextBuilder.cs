@@ -150,6 +150,7 @@ namespace BrandUp.MongoDB
 
             lock (_initializationLock)
             {
+                ConventionRegistry.Remove(dbContextName);
                 RegisterConventions(dbContextName);
             }
 
