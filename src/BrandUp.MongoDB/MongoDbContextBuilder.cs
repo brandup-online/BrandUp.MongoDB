@@ -1,4 +1,5 @@
-﻿using MongoDB.Bson.Serialization.Conventions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using System;
 using System.Collections;
@@ -15,7 +16,6 @@ namespace BrandUp.MongoDB
         string DatabaseName { get; set; }
         ConventionPack Conventions { get; }
         IEnumerable<MongoDbCollectionOptions> Collections { get; }
-        IMongoDbClientFactory ClientFactory { get; set; }
         IMongoDbContextBuilder AddCollection(Type documentType);
         bool HasCollectionDocumentType(Type documentType);
         bool HasCollectionName(string name);
@@ -55,7 +55,6 @@ namespace BrandUp.MongoDB
         public string DatabaseName { get; set; }
         public ConventionPack Conventions { get; } = new ConventionPack();
         public IEnumerable<MongoDbCollectionOptions> Collections => collections;
-        public IMongoDbClientFactory ClientFactory { get; set; }
         public IMongoDbContextBuilder AddCollection(Type documentType)
         {
             if (documentType == null)
@@ -66,7 +65,7 @@ namespace BrandUp.MongoDB
                 throw new ArgumentException("Document type not allow abstract class.");
 
             if (collectionDocumentTypes.ContainsKey(documentType))
-                throw new ArgumentException();
+                throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} already registered.");
 
             var documentAttribute = documentType.GetCustomAttribute<DocumentAttribute>(false);
             if (documentAttribute == null)
@@ -108,7 +107,7 @@ namespace BrandUp.MongoDB
 
         #endregion
 
-        private MongoDbContextOptions BuildOptions()
+        private MongoDbContextOptions BuildOptions(IServiceProvider provider)
         {
             if (ConnectionString == null)
                 throw new InvalidOperationException($"Not set {nameof(ConnectionString)} value.");
@@ -122,11 +121,12 @@ namespace BrandUp.MongoDB
             };
 
             var mongoUrl = mongoUrlBuilder.ToMongoUrl();
+            var clientFactory = provider.GetRequiredService<IMongoDbClientFactory>();
 
             var options = new MongoDbContextOptions
             {
                 Url = mongoUrl,
-                ClientFactory = ClientFactory ?? MongoDbClientFactory.Instance
+                ClientFactory = clientFactory
             };
 
             options.Collections.AddRange(collections);
@@ -139,7 +139,7 @@ namespace BrandUp.MongoDB
             if (dbContext != null)
                 throw new InvalidOperationException();
 
-            var dbContextOptions = BuildOptions();
+            var dbContextOptions = BuildOptions(provider);
             var dbContextType = DbContextType;
             var dbContextName = dbContextType.FullName;
 

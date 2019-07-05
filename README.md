@@ -5,37 +5,48 @@
 ## Installation
 NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB/](https://www.nuget.org/packages/BrandUp.MongoDB/)
 
-## Use
+## Use MongoDbContext
 
 ```
 public class WebSiteDbContext : MongoDbContext, ICommentsDbContext
 {
-    public TestDbContext(MongoDbContextOptions options) : base(options) { }
+	public TestDbContext(MongoDbContextOptions options) : base(options) { }
 
-    public IMongoCollection<ArticleDocument> Articles => GetCollection<ArticleDocument>();
-    
-    public IMongoCollection<CommentDocument> Comments => GetCollection<CommentDocument>();
+	public IMongoCollection<ArticleDocument> Articles => GetCollection<ArticleDocument>();
+	
+	public IMongoCollection<CommentDocument> Comments => GetCollection<CommentDocument>();
 }
 
 public interface ICommentsDbContext
 {
-    IMongoCollection<CommentDocument> Comments { get; }
+	IMongoCollection<CommentDocument> Comments { get; }
 }
 
 [Document(CollectionName = "Articles")]
-public class ArticleDocument
-{
-}
+public class ArticleDocument { }
 
 [Document(CollectionName = "Comments")]
-public class CommentDocument
-{
-}
+public class CommentDocument { }
 
-services.AddMongoDbContext<WebSiteDbContext>(options =>
+services.AddMongoDbContext<WebSiteDbContext>(builder =>
 {
-    options.ConnectionString = "mongodb://localhost:27017";
-    options.DatabaseName = "WebSite";
+	builder.ConnectionString = "mongodb://localhost:27017";
+	builder.DatabaseName = "WebSite";
+	builder
+		.UseCamelCaseElementName()
+		.UseIgnoreIfNull()
+		.UseIgnoreIfDefault();
 });
 services.AddMongoDbContextExension<WebSiteDbContext, ICommentsDbContext>();
+```
+
+
+## Testing
+
+NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB.Testing/](https://www.nuget.org/packages/BrandUp.MongoDB.Testing/)
+
+```
+
+services.AddFakeMongoDbClientFactory();
+
 ```

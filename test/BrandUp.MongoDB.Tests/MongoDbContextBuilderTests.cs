@@ -18,26 +18,30 @@ namespace BrandUp.MongoDB.Tests
                 DatabaseName = "Test"
             };
 
-            builder.UseFakeClientFactory();
-
             var services = new ServiceCollection();
-            services.AddSingleton<TestService>();
+            services
+                .AddSingleton<TestService>()
+                .AddFakeMongoDbClientFactory();
             var provider = services.BuildServiceProvider();
 
             dbContext = builder.Build(provider);
         }
 
-        public Task InitializeAsync()
+        #region IAsyncLifetime members
+
+        Task IAsyncLifetime.InitializeAsync()
         {
             return Task.CompletedTask;
         }
 
-        public Task DisposeAsync()
+        Task IAsyncLifetime.DisposeAsync()
         {
             dbContext.Dispose();
 
             return Task.CompletedTask;
         }
+
+        #endregion
 
         #region Test methods
 

@@ -12,7 +12,7 @@ namespace Microsoft.Extensions.DependencyInjection
             return AddMongoDbContext<TContext>(services, configuration, null);
         }
 
-        public static IServiceCollection AddMongoDbContext<TContext>(this IServiceCollection services, IConfiguration configuration, Action<IMongoDbContextBuilder> optionsAction)
+        public static IServiceCollection AddMongoDbContext<TContext>(this IServiceCollection services, IConfiguration configuration, Action<IMongoDbContextBuilder> builderAction)
             where TContext : MongoDbContext
         {
             if (configuration == null)
@@ -20,34 +20,35 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var config = configuration.Get<MongoDbContextConfiguration>();
 
-            services.AddMongoDbContext<TContext>(options =>
+            services.AddMongoDbContext<TContext>(builder =>
             {
-                options.ConnectionString = config.ConnectionString;
-                options.DatabaseName = config.DatabaseName;
+                builder.ConnectionString = config.ConnectionString;
+                builder.DatabaseName = config.DatabaseName;
 
                 if (config.CamelCase)
-                    options.UseCamelCaseElementName();
+                    builder.UseCamelCaseElementName();
 
-                options.UseIgnoreIfDefault(config.IgnoreIfDefault);
-                options.UseIgnoreIfNull(config.IgnoreIfNull);
+                builder.UseIgnoreIfDefault(config.IgnoreIfDefault);
+                builder.UseIgnoreIfNull(config.IgnoreIfNull);
 
-                optionsAction?.Invoke(options);
+                builderAction?.Invoke(builder);
             });
 
             return services;
         }
 
-        public static IServiceCollection AddMongoDbContext<TContext>(this IServiceCollection services, Action<IMongoDbContextBuilder> optionsAction)
+        public static IServiceCollection AddMongoDbContext<TContext>(this IServiceCollection services, Action<IMongoDbContextBuilder> builderAction)
             where TContext : MongoDbContext
         {
-            if (optionsAction == null)
-                throw new ArgumentNullException(nameof(optionsAction));
+            if (builderAction == null)
+                throw new ArgumentNullException(nameof(builderAction));
 
-            var optionsBuilder = new MongoDbContextBuilder<TContext>();
+            var builder = new MongoDbContextBuilder<TContext>();
 
-            optionsAction.Invoke(optionsBuilder);
+            builderAction.Invoke(builder);
 
-            services.AddSingleton(optionsBuilder.Build);
+            services.AddSingleton(builder.Build);
+            services.AddSingleton<IMongoDbClientFactory>(MongoDbClientFactory.Instance);
 
             return services;
         }

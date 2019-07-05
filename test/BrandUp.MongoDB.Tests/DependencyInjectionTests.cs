@@ -14,13 +14,13 @@ namespace BrandUp.MongoDB.Tests
         public void AddMongoDbContext_WithOptionsAction()
         {
             var services = new ServiceCollection();
-            services.AddSingleton<TestService>();
-
-            services.AddMongoDbContext<TestDbContext>(options =>
-            {
-                options.DatabaseName = "Test";
-                options.UseFakeClientFactory();
-            });
+            services
+                .AddSingleton<TestService>()
+                .AddMongoDbContext<TestDbContext>(builder =>
+                {
+                    builder.DatabaseName = "Test";
+                })
+                .AddFakeMongoDbClientFactory();
 
             using (var scope = services.BuildServiceProvider())
             {
@@ -50,11 +50,10 @@ namespace BrandUp.MongoDB.Tests
             var configuration = configurationBuilder.Build();
 
             var services = new ServiceCollection();
-            services.AddSingleton<TestService>();
-            services.AddMongoDbContext<TestDbContext>(configuration, options =>
-            {
-                options.UseFakeClientFactory();
-            });
+            services
+                .AddSingleton<TestService>()
+                .AddMongoDbContext<TestDbContext>(configuration)
+                .AddFakeMongoDbClientFactory();
 
             using (var scope = services.BuildServiceProvider())
             {
@@ -77,12 +76,13 @@ namespace BrandUp.MongoDB.Tests
             var services = new ServiceCollection();
             services.AddSingleton<TestService>();
 
-            services.AddMongoDbContext<TestDbContext>(options =>
-            {
-                options.DatabaseName = "Test";
-                options.UseFakeClientFactory();
-            });
-            services.AddMongoDbContextExension<TestDbContext, IWorkerDbContext>();
+            services
+                .AddMongoDbContext<TestDbContext>(builder =>
+                {
+                    builder.DatabaseName = "Test";
+                })
+                .AddFakeMongoDbClientFactory()
+                .AddMongoDbContextExension<TestDbContext, IWorkerDbContext>();
 
             using (var scope = services.BuildServiceProvider())
             {
