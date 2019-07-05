@@ -48,7 +48,6 @@ namespace Microsoft.Extensions.DependencyInjection
             builderAction.Invoke(builder);
 
             services.AddSingleton(builder.Build);
-            services.AddSingleton<IMongoDbClientFactory>(MongoDbClientFactory.Instance);
 
             return services;
         }
