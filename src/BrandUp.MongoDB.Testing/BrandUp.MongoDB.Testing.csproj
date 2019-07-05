@@ -6,7 +6,7 @@
     <Company>BrandUp.online</Company>
     <PackageProjectUrl>https://github.com/dkovyazin/BrandUp.MongoDB</PackageProjectUrl>
     <RepositoryUrl>https://github.com/dkovyazin/BrandUp.MongoDB</RepositoryUrl>
-    <LangVersion>7.1</LangVersion>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
