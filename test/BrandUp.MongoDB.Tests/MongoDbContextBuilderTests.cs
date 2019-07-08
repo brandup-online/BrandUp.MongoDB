@@ -8,10 +8,12 @@ namespace BrandUp.MongoDB.Tests
 {
     public class MongoDbContextBuilderTests : IAsyncLifetime
     {
-        private readonly MongoDbContextBuilder<TestDbContext> builder;
-        private readonly TestDbContext dbContext;
+        private MongoDbContextBuilder<TestDbContext> builder;
+        private TestDbContext dbContext;
 
-        public MongoDbContextBuilderTests()
+        #region IAsyncLifetime members
+
+        Task IAsyncLifetime.InitializeAsync()
         {
             builder = new MongoDbContextBuilder<TestDbContext>
             {
@@ -25,12 +27,7 @@ namespace BrandUp.MongoDB.Tests
             var provider = services.BuildServiceProvider();
 
             dbContext = builder.Build(provider);
-        }
 
-        #region IAsyncLifetime members
-
-        Task IAsyncLifetime.InitializeAsync()
-        {
             return Task.CompletedTask;
         }
 
@@ -132,6 +129,39 @@ namespace BrandUp.MongoDB.Tests
             Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfDefaultConvention>());
 
             var pack = ConventionRegistry.Lookup(typeof(NewsDocument));
+            Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+        }
+
+        [Fact]
+        public void CheckConventionOfPropertyObject()
+        {
+            builder.UseIgnoreIfDefault(false);
+
+            Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfDefaultConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(SeoOptions));
+            Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+        }
+
+        [Fact]
+        public void CheckConventionOfPropertyArray()
+        {
+            builder.UseIgnoreIfDefault(false);
+
+            Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfDefaultConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(CommentDocument));
+            Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+        }
+
+        [Fact]
+        public void CheckConventionOfPropertyEnumerable()
+        {
+            builder.UseIgnoreIfDefault(false);
+
+            Assert.NotEmpty(builder.Conventions.OfType<IgnoreIfDefaultConvention>());
+
+            var pack = ConventionRegistry.Lookup(typeof(Tag));
             Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
         }
 

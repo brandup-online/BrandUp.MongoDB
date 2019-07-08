@@ -24,7 +24,6 @@ namespace BrandUp.MongoDB
     public class MongoDbContextBuilder<TContext> : IMongoDbContextBuilder
         where TContext : MongoDbContext
     {
-        private static readonly object _initializationLock = new object();
         private readonly List<MongoDbCollectionOptions> collections = new List<MongoDbCollectionOptions>();
         private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
         private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
@@ -139,7 +138,7 @@ namespace BrandUp.MongoDB
         public TContext Build(IServiceProvider provider)
         {
             if (dbContext != null)
-                throw new InvalidOperationException();
+                throw new InvalidOperationException($"Context {typeof(TContext).AssemblyQualifiedName} is already builded.");
 
             var dbContextOptions = BuildOptions(provider);
             var dbContextType = DbContextType;
@@ -147,14 +146,11 @@ namespace BrandUp.MongoDB
 
             dbContextOptions.DisposeContextAction = () =>
             {
-                ConventionRegistry.Remove(dbContextName);
+                //ConventionRegistry.Remove(dbContextName);
             };
 
-            lock (_initializationLock)
-            {
-                ConventionRegistry.Remove(dbContextName);
-                RegisterConventions(dbContextName);
-            }
+            ConventionRegistry.Remove(dbContextName);
+            RegisterConventions(dbContextName);
 
             var constructor = dbContextType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
 
