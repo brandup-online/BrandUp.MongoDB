@@ -1,4 +1,7 @@
-﻿using MongoDB.Driver;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.IdGenerators;
+using MongoDB.Driver;
 using System.Collections.Generic;
 using System.Threading;
 
@@ -13,6 +16,7 @@ namespace BrandUp.MongoDB.Tests
             this.testService = testService ?? throw new System.ArgumentNullException(nameof(testService));
         }
 
+        public IMongoCollection<Document> Documents => GetCollection<Document>();
         public IMongoCollection<ArticleDocument> Articles => GetCollection<ArticleDocument>();
         public IMongoCollection<TaskDocument> Tasks => GetCollection<TaskDocument>();
     }
@@ -27,9 +31,11 @@ namespace BrandUp.MongoDB.Tests
         IMongoCollection<TaskDocument> Tasks { get; }
     }
 
-    public class Document
+    [Document(CollectionName = "Documents")]
+    public abstract class Document
     {
-
+        [BsonId(IdGenerator = typeof(ObjectIdGenerator)), BsonRepresentation(BsonType.ObjectId)]
+        public string Id { get; set; }
     }
 
     [Document]

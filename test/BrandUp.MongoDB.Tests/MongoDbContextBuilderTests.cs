@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Driver;
 using System.Linq;
 using System.Threading.Tasks;
 using Xunit;
@@ -59,9 +60,10 @@ namespace BrandUp.MongoDB.Tests
         [Fact]
         public void CheckCollections()
         {
-            Assert.Equal(2, builder.Collections.Count());
+            Assert.Equal(3, builder.Collections.Count());
             Assert.True(builder.HasCollectionDocumentType(typeof(ArticleDocument)));
             Assert.True(builder.HasCollectionDocumentType(typeof(TaskDocument)));
+            Assert.True(builder.HasCollectionDocumentType(typeof(Document)));
             Assert.True(builder.HasDocumentType(typeof(SeoOptions)));
             Assert.True(builder.HasDocumentType(typeof(Tag)));
             Assert.True(builder.HasDocumentType(typeof(CommentDocument)));
@@ -163,6 +165,14 @@ namespace BrandUp.MongoDB.Tests
 
             var pack = ConventionRegistry.Lookup(typeof(Tag));
             Assert.NotEmpty(pack.Conventions.OfType<IgnoreIfDefaultConvention>());
+        }
+
+        [Fact]
+        public void Insert()
+        {
+            dbContext.Documents.InsertOne(new ArticleDocument());
+
+            //var list = dbContext.Documents.FindSync(Builders<Document>.Filter.Empty).ToList();
         }
 
         #endregion

@@ -19,7 +19,7 @@ namespace MongoDB.Driver.Tests
             var bsonDocument = updateDefonition.Render(serializer, BsonSerializer.SerializerRegistry);
 
             Assert.NotNull(bsonDocument);
-            Assert.True(bsonDocument.Contains("$set"));
+            Assert.True(bsonDocument.AsBsonDocument.Contains("$set"));
         }
 
         public class Document

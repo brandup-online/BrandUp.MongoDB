@@ -58,10 +58,10 @@ namespace BrandUp.MongoDB
         {
             if (documentType == null)
                 throw new ArgumentNullException(nameof(documentType));
-            if (!documentType.IsClass)
-                throw new ArgumentException("Document type require is class.");
-            if (documentType.IsAbstract)
-                throw new ArgumentException("Document type not allow abstract class.");
+            //if (!documentType.IsClass)
+            //    throw new ArgumentException("Document type require is class.");
+            //if (documentType.IsAbstract)
+            //    throw new ArgumentException("Document type not allow abstract class.");
 
             if (collectionDocumentTypes.ContainsKey(documentType))
                 throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} already registered.");

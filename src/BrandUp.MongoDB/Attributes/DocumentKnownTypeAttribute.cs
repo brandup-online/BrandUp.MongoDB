@@ -2,7 +2,7 @@
 
 namespace BrandUp.MongoDB
 {
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = false)]
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, AllowMultiple = true, Inherited = false)]
     public class DocumentKnownTypeAttribute : Attribute
     {
         public Type Type { get; }
