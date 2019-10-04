@@ -32,6 +32,7 @@ namespace BrandUp.MongoDB.Tests
     }
 
     [Document(CollectionName = "Documents")]
+    [DocumentKnownType(typeof(ArticleDocument))]
     public abstract class Document
     {
         [BsonId(IdGenerator = typeof(ObjectIdGenerator)), BsonRepresentation(BsonType.ObjectId)]

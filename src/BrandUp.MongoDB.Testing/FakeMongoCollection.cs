@@ -49,7 +49,7 @@ namespace BrandUp.MongoDB.Testing
             using (var bsonReader = new BsonDocumentWriter(bsonDocument))
             {
                 var bsonSerializationContext = BsonSerializationContext.CreateRoot(bsonReader);
-                DocumentSerializer.Serialize(bsonSerializationContext, default, document);
+                DocumentSerializer.Serialize(bsonSerializationContext, new BsonSerializationArgs { SerializeIdFirst = true }, document);
             }
 
             var id = GetDocumentIdValue(bsonDocument);

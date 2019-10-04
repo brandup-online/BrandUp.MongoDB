@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using System.Linq;
@@ -170,7 +171,7 @@ namespace BrandUp.MongoDB.Tests
         [Fact]
         public void Insert()
         {
-            dbContext.Documents.InsertOne(new ArticleDocument());
+            dbContext.Documents.InsertOne(new ArticleDocument { Id = ObjectId.GenerateNewId().ToString() });
 
             //var list = dbContext.Documents.FindSync(Builders<Document>.Filter.Empty).ToList();
         }
