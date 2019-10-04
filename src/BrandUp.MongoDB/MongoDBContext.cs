@@ -13,7 +13,7 @@ namespace BrandUp.MongoDB
 
         public IMongoDatabase Database { get; }
 
-        public MongoDbContext(MongoDbContextOptions options)
+        protected MongoDbContext(MongoDbContextOptions options)
         {
             if (options == null)
                 throw new ArgumentNullException(nameof(options));
@@ -98,11 +98,26 @@ namespace BrandUp.MongoDB
 
         #endregion
 
-        #region IDisposable members
+        #region IDisposable Support
+
+        private bool disposedValue = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    disposeContextAction();
+                }
+
+                disposedValue = true;
+            }
+        }
 
         public void Dispose()
         {
-            disposeContextAction();
+            Dispose(true);
         }
 
         #endregion

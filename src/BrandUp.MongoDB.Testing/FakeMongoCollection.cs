@@ -349,10 +349,19 @@ namespace BrandUp.MongoDB.Testing
         }
         public IAsyncCursor<TProjection> FindSync<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOptions<TDocument, TProjection> options = null, CancellationToken cancellationToken = default)
         {
-            var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-            var docs = docObjects.Where(ef.Expression.Compile()).OfType<TProjection>().ToList();
+            if (filter is ExpressionFilterDefinition<TDocument> ef)
+            {
+                var docs = docObjects.Where(ef.Expression.Compile()).OfType<TProjection>().ToList();
+                return new FakeAsyncCursor<TProjection>(docs);
+            }
+            else
+            {
+                var filterDoc = filter.Render(DocumentSerializer, BsonSerializer.SerializerRegistry);
+                if (filterDoc.ElementCount > 0)
+                    throw new NotSupportedException();
 
-            return new FakeAsyncCursor<TProjection>(docs);
+                return new FakeAsyncCursor<TProjection>(docObjects.OfType<TProjection>());
+            }
         }
         public Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(FilterDefinition<TDocument> filter, FindOptions<TDocument, TProjection> options = null, CancellationToken cancellationToken = default)
         {

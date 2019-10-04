@@ -107,7 +107,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         }
 
         [Fact]
-        public void FindSync_empty()
+        public void FindSync_not_matched()
         {
             var result = collection.FindSync(it => it.Name == "test").ToList();
 
@@ -115,11 +115,21 @@ namespace BrandUp.MongoDB.Testing.Tests
         }
 
         [Fact]
-        public void FindSync_not_empty()
+        public void FindSync_matched()
         {
             collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
 
             var result = collection.FindSync(it => it.Name == "test").ToList();
+
+            Assert.Single(result);
+        }
+
+        [Fact]
+        public void FindSync_empty_filter()
+        {
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
+
+            var result = collection.FindSync(Builders<Document>.Filter.Empty).ToList();
 
             Assert.Single(result);
         }

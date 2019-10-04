@@ -20,9 +20,6 @@ namespace BrandUp.MongoDB.Testing
         }
 
         public IEnumerable<T> Current => new T[] { items[index] };
-        public void Dispose()
-        {
-        }
         public bool MoveNext(CancellationToken cancellationToken = default)
         {
             if (index == items.Count - 1)
@@ -35,5 +32,28 @@ namespace BrandUp.MongoDB.Testing
         {
             return Task.FromResult(MoveNext(cancellationToken));
         }
+
+        #region IDisposable Support
+
+        private bool disposedValue = false;
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                }
+
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+
+        #endregion
     }
 }
