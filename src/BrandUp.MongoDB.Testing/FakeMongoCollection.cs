@@ -529,6 +529,36 @@ namespace BrandUp.MongoDB.Testing
         }
         public ReplaceOneResult ReplaceOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions options = null, CancellationToken cancellationToken = default)
         {
+            return ReplaceOneInternal(session, filter, replacement, cancellationToken);
+        }
+        public Task<ReplaceOneResult> ReplaceOneAsync(FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return ReplaceOneAsync(null, filter, replacement, options, cancellationToken);
+        }
+        public Task<ReplaceOneResult> ReplaceOneAsync(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(ReplaceOne(session, filter, replacement, options, cancellationToken));
+        }
+
+        public ReplaceOneResult ReplaceOne(FilterDefinition<TDocument> filter, TDocument replacement, ReplaceOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return ReplaceOne(null, filter, replacement, options, cancellationToken);
+        }
+        public ReplaceOneResult ReplaceOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, ReplaceOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return ReplaceOneInternal(session, filter, replacement, cancellationToken);
+        }
+        public Task<ReplaceOneResult> ReplaceOneAsync(FilterDefinition<TDocument> filter, TDocument replacement, ReplaceOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return ReplaceOneAsync(null, filter, replacement, options, cancellationToken);
+        }
+        public Task<ReplaceOneResult> ReplaceOneAsync(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, ReplaceOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(ReplaceOne(session, filter, replacement, options, cancellationToken));
+        }
+
+        ReplaceOneResult ReplaceOneInternal(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, CancellationToken cancellationToken = default)
+        {
             var filteredDocs = Filter(filter);
             if (filteredDocs.Count > 1)
                 throw new InvalidOperationException();
@@ -562,14 +592,6 @@ namespace BrandUp.MongoDB.Testing
             docObjects[docIndex] = replacement;
 
             return new ReplaceOneResult.Acknowledged(1, 1, replacedDocId);
-        }
-        public Task<ReplaceOneResult> ReplaceOneAsync(FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions options = null, CancellationToken cancellationToken = default)
-        {
-            return ReplaceOneAsync(null, filter, replacement, options, cancellationToken);
-        }
-        public Task<ReplaceOneResult> ReplaceOneAsync(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions options = null, CancellationToken cancellationToken = default)
-        {
-            return Task.FromResult(ReplaceOne(session, filter, replacement, options, cancellationToken));
         }
 
         #endregion
