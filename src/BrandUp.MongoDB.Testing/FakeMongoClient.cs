@@ -46,8 +46,7 @@ namespace BrandUp.MongoDB.Testing
         {
             if (!databases.TryGetValue(name.ToLower(), out FakeMongoDatabase database))
                 databases.Add(name.ToLower(), database = new FakeMongoDatabase(this, name, settings));
-
-            return new FakeMongoDatabase(this, name, settings);
+            return database;
         }
 
         public IAsyncCursor<string> ListDatabaseNames(CancellationToken cancellationToken = default(CancellationToken))
@@ -112,12 +111,12 @@ namespace BrandUp.MongoDB.Testing
 
         public IClientSessionHandle StartSession(ClientSessionOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new System.NotImplementedException();
+            return new FakeClientSessionHandle(this);
         }
 
         public Task<IClientSessionHandle> StartSessionAsync(ClientSessionOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(StartSession(options, cancellationToken));
         }
 
         public IChangeStreamCursor<TResult> Watch<TResult>(PipelineDefinition<ChangeStreamDocument<BsonDocument>, TResult> pipeline, ChangeStreamOptions options = null, CancellationToken cancellationToken = default)
