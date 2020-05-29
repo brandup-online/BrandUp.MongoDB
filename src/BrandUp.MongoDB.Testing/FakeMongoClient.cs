@@ -19,7 +19,6 @@ namespace BrandUp.MongoDB.Testing
         #region IMongoClient members
 
         public ICluster Cluster => throw new System.NotImplementedException();
-
         public MongoClientSettings Settings { get; }
 
         public void DropDatabase(string name, CancellationToken cancellationToken = default(CancellationToken))

@@ -33,6 +33,11 @@ namespace BrandUp.MongoDB.Testing
         public IMongoIndexManager<TDocument> Indexes => indexManager;
         public MongoCollectionSettings Settings { get; }
 
+        public IQueryable<TDocument> GetDocuemntsQueryable()
+        {
+            return docObjects.AsQueryable();
+        }
+
         #region Helpers
 
         private List<TDocument> Filter(FilterDefinition<TDocument> filter)
