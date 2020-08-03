@@ -41,6 +41,7 @@ namespace BrandUp.MongoDB.Tests
 
     [Document]
     [DocumentKnownType(typeof(NewsDocument))]
+    [BsonKnownTypes(typeof(News2Document))]
     public class ArticleDocument : Document
     {
         public SeoOptions Seo { get; set; }
@@ -49,6 +50,11 @@ namespace BrandUp.MongoDB.Tests
     }
 
     public class NewsDocument : ArticleDocument
+    {
+
+    }
+
+    public class News2Document : ArticleDocument
     {
 
     }

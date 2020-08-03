@@ -68,6 +68,8 @@ namespace BrandUp.MongoDB.Tests
             Assert.True(builder.HasDocumentType(typeof(SeoOptions)));
             Assert.True(builder.HasDocumentType(typeof(Tag)));
             Assert.True(builder.HasDocumentType(typeof(CommentDocument)));
+            Assert.True(builder.HasDocumentType(typeof(NewsDocument)));
+            Assert.True(builder.HasDocumentType(typeof(News2Document)));
             Assert.True(builder.HasCollectionName("Article"));
             Assert.True(builder.HasCollectionName("Tasks"));
         }

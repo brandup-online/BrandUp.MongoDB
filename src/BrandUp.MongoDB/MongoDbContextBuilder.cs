@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
 using System;
@@ -213,6 +214,17 @@ namespace BrandUp.MongoDB
                     throw new InvalidOperationException($"Type {knownTypeAttribute.Type.FullName} is not overide {type.FullName}.");
 
                 AddDocumentType(knownTypeAttribute.Type);
+            }
+
+            foreach (var knownTypeAttribute in type.GetCustomAttributes<BsonKnownTypesAttribute>(false))
+            {
+                foreach (var t in knownTypeAttribute.KnownTypes)
+                {
+                    if (!t.IsSubclassOf(type))
+                        throw new InvalidOperationException($"Type {t.FullName} is not overide {type.FullName}.");
+
+                    AddDocumentType(t);
+                }
             }
 
             AddDocumentType(type.BaseType);
