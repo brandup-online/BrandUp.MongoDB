@@ -21,7 +21,7 @@ namespace MongoDB.Driver.Tests
                 serializer.Serialize(bsonSerializationContext, default, doc);
             }
 
-            Assert.Equal(doc.Id, serializedDocument["_id"]);
+            Assert.Equal(doc.Id, serializedDocument["_id"].AsGuid);
             Assert.Equal(doc.Title, serializedDocument["Title"]);
         }
 

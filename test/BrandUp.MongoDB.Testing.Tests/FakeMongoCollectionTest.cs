@@ -25,6 +25,14 @@ namespace BrandUp.MongoDB.Testing.Tests
         }
 
         [Fact]
+        public void CountDocuments_Empty()
+        {
+            var count = collection.CountDocuments(Builders<Document>.Filter.Empty);
+
+            Assert.Equal(0, count);
+        }
+
+        [Fact]
         public void InsertOne()
         {
             collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });

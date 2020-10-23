@@ -235,8 +235,12 @@ namespace BrandUp.MongoDB.Testing
             if (filter == null)
                 throw new ArgumentNullException(nameof(filter));
 
-            var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-            return docObjects.Count(ef.Expression.Compile());
+            if (filter is ExpressionFilterDefinition<TDocument> exprFilter)
+                return docObjects.Count(exprFilter.Expression.Compile());
+            else if (filter == FilterDefinition<TDocument>.Empty)
+                return docObjects.Count;
+            else
+                throw new NotSupportedException();
         }
         public Task<long> CountDocumentsAsync(FilterDefinition<TDocument> filter, CountOptions options = null, CancellationToken cancellationToken = default)
         {
