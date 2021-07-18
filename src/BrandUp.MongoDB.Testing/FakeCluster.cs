@@ -1,13 +1,13 @@
-﻿using MongoDB.Driver;
+﻿using System;
+using System.Threading;
+using System.Threading.Tasks;
+using MongoDB.Driver;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Servers;
 using MongoDB.Libmongocrypt;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace BrandUp.MongoDB.Testing
 {

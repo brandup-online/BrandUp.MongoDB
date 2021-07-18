@@ -1,10 +1,10 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
 
 namespace BrandUp.MongoDB.Testing
 {
@@ -184,7 +184,7 @@ namespace BrandUp.MongoDB.Testing
 
         public IAsyncCursor<BsonDocument> List(CancellationToken cancellationToken = default)
         {
-            return List(null, cancellationToken);
+            return List((IClientSessionHandle)null, cancellationToken);
         }
         public IAsyncCursor<BsonDocument> List(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
@@ -197,6 +197,26 @@ namespace BrandUp.MongoDB.Testing
         public Task<IAsyncCursor<BsonDocument>> ListAsync(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(List(session, cancellationToken));
+        }
+
+        public IAsyncCursor<BsonDocument> List(ListIndexesOptions options, CancellationToken cancellationToken = default)
+        {
+            return List(null, options, cancellationToken);
+        }
+
+        public IAsyncCursor<BsonDocument> List(IClientSessionHandle session, ListIndexesOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return new FakeAsyncCursor<BsonDocument>(indexes.Values);
+        }
+
+        public Task<IAsyncCursor<BsonDocument>> ListAsync(ListIndexesOptions options, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(List(options, cancellationToken));
+        }
+
+        public Task<IAsyncCursor<BsonDocument>> ListAsync(IClientSessionHandle session, ListIndexesOptions options = null, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(List(session, options, cancellationToken));
         }
     }
 }
