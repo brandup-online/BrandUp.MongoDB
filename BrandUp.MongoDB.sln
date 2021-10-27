@@ -20,7 +20,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB.Testing.Tests", "test\BrandUp.MongoDB.Testing.Tests\BrandUp.MongoDB.Testing.Tests.csproj", "{96199A1D-8A7B-4FB2-AD24-10A5B4A576CD}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MongoDB.Driver.Tests", "test\MongoDB.Driver.Tests\MongoDB.Driver.Tests.csproj", "{17CA235A-09A4-471E-972E-B7065CDC460D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDB.Driver.Tests", "test\MongoDB.Driver.Tests\MongoDB.Driver.Tests.csproj", "{17CA235A-09A4-471E-972E-B7065CDC460D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandUp.MongoDB.Testing.Mongo2Go", "src\BrandUp.MongoDB.Testing.Mongo2Go\BrandUp.MongoDB.Testing.Mongo2Go.csproj", "{54D5EA59-8E2C-4647-B83A-4B59224CB786}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandUp.MongoDB.Testing.Mongo2Go.Tests", "test\BrandUp.MongoDB.Testing.Mongo2Go.Tests\BrandUp.MongoDB.Testing.Mongo2Go.Tests.csproj", "{643E432E-5F5E-410B-B4C7-867929A824CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -48,6 +52,14 @@ Global
 		{17CA235A-09A4-471E-972E-B7065CDC460D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{17CA235A-09A4-471E-972E-B7065CDC460D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{17CA235A-09A4-471E-972E-B7065CDC460D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{54D5EA59-8E2C-4647-B83A-4B59224CB786}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{54D5EA59-8E2C-4647-B83A-4B59224CB786}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{54D5EA59-8E2C-4647-B83A-4B59224CB786}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{54D5EA59-8E2C-4647-B83A-4B59224CB786}.Release|Any CPU.Build.0 = Release|Any CPU
+		{643E432E-5F5E-410B-B4C7-867929A824CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{643E432E-5F5E-410B-B4C7-867929A824CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{643E432E-5F5E-410B-B4C7-867929A824CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{643E432E-5F5E-410B-B4C7-867929A824CC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -58,6 +70,8 @@ Global
 		{95E7F93C-0B5A-460A-8033-7450D4949AB9} = {17DD091D-2C32-45D3-8EB5-1374BB8D8980}
 		{96199A1D-8A7B-4FB2-AD24-10A5B4A576CD} = {432FA819-2F7B-47E4-BC06-A51F8B567D87}
 		{17CA235A-09A4-471E-972E-B7065CDC460D} = {432FA819-2F7B-47E4-BC06-A51F8B567D87}
+		{54D5EA59-8E2C-4647-B83A-4B59224CB786} = {17DD091D-2C32-45D3-8EB5-1374BB8D8980}
+		{643E432E-5F5E-410B-B4C7-867929A824CC} = {432FA819-2F7B-47E4-BC06-A51F8B567D87}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4167130E-7E0B-401A-9C69-B84D8D0A532E}

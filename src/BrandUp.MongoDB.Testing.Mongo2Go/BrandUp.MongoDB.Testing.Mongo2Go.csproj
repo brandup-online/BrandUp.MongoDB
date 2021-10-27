@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <RootNamespace>BrandUp.MongoDB.Testing</RootNamespace>
+    <Authors>Dmitry Kovyazin</Authors>
+    <Company>BrandUp.online</Company>
+    <Product>BrandUp.MongoDB.Testing</Product>
+    <PackageProjectUrl>https://github.com/dkovyazin/BrandUp.MongoDB</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/dkovyazin/BrandUp.MongoDB</RepositoryUrl>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Mongo2Go" Version="3.1.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\BrandUp.MongoDB\BrandUp.MongoDB.csproj" />
+  </ItemGroup>
+
+</Project>
