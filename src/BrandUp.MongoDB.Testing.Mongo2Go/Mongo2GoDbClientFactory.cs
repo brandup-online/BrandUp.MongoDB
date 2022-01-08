@@ -1,6 +1,6 @@
-﻿using System;
-using Mongo2Go;
+﻿using Mongo2Go;
 using MongoDB.Driver;
+using System;
 
 namespace BrandUp.MongoDB.Testing
 {
