@@ -1,13 +1,13 @@
-﻿using System;
-using System.Threading;
-using System.Threading.Tasks;
-using MongoDB.Driver;
+﻿using MongoDB.Driver;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Clusters.ServerSelectors;
 using MongoDB.Driver.Core.Configuration;
 using MongoDB.Driver.Core.Servers;
 using MongoDB.Libmongocrypt;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace BrandUp.MongoDB.Testing
 {
@@ -19,6 +19,12 @@ namespace BrandUp.MongoDB.Testing
         public CryptClient CryptClient => throw new NotImplementedException();
 
         public event EventHandler<ClusterDescriptionChangedEventArgs> DescriptionChanged;
+
+        protected void OnDescriptionChanged(ClusterDescriptionChangedEventArgs e)
+        {
+            if (DescriptionChanged != null)
+                DescriptionChanged(this, e);
+        }
 
         public ICoreServerSession AcquireServerSession()
         {

@@ -506,18 +506,22 @@ namespace BrandUp.MongoDB.Testing
 
         #region MapReduce members
 
+        [Obsolete]
         public IAsyncCursor<TResult> MapReduce<TResult>(BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult> options = null, CancellationToken cancellationToken = default)
         {
             throw new System.NotImplementedException();
         }
+        [Obsolete]
         public IAsyncCursor<TResult> MapReduce<TResult>(IClientSessionHandle session, BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult> options = null, CancellationToken cancellationToken = default)
         {
             throw new System.NotImplementedException();
         }
+        [Obsolete]
         public Task<IAsyncCursor<TResult>> MapReduceAsync<TResult>(BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult> options = null, CancellationToken cancellationToken = default)
         {
             throw new System.NotImplementedException();
         }
+        [Obsolete]
         public Task<IAsyncCursor<TResult>> MapReduceAsync<TResult>(IClientSessionHandle session, BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult> options = null, CancellationToken cancellationToken = default)
         {
             throw new System.NotImplementedException();
