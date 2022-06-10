@@ -49,8 +49,8 @@ services.AddMongoDbContextExension<WebSiteDbContext, ICommentsDbContext>();
 ## Using
 
 ```
-var dbContext = serviceProvider.GetREquiredService<WebSiteDbContext>();
-var commentsDbContext = serviceProvider.GetREquiredService<ICommentsDbContext>();
+var dbContext = serviceProvider.GetRequiredService<WebSiteDbContext>();
+var commentsDbContext = serviceProvider.GetRequiredService<ICommentsDbContext>();
 ```
 
 ## Testing with Mongo2Go
