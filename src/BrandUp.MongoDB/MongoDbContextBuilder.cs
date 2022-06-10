@@ -237,7 +237,7 @@ namespace BrandUp.MongoDB
         public static string TrimCollectionNamePrefix(string name)
         {
             if (name.EndsWith("Document"))
-                return name.Substring(0, name.Length - "Document".Length);
+                return name[..^"Document".Length];
             return name;
         }
     }

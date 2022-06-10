@@ -6,9 +6,9 @@ namespace BrandUp.MongoDB
 {
     public abstract class MongoDbContext : IDisposable
     {
-        private readonly List<IMongoDbCollectionContext> collections = new List<IMongoDbCollectionContext>();
-        private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
-        private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
+        readonly List<IMongoDbCollectionContext> collections = new List<IMongoDbCollectionContext>();
+        readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
+        readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
         readonly Action disposeContextAction;
 
         public IMongoDatabase Database { get; }

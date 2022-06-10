@@ -5,7 +5,7 @@
 ## Installation
 NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB/](https://www.nuget.org/packages/BrandUp.MongoDB/)
 
-## Use MongoDbContext
+## Configuration
 
 ```
 public class WebSiteDbContext : MongoDbContext, ICommentsDbContext
@@ -28,6 +28,7 @@ public class ArticleDocument { }
 [Document(CollectionName = "Comments")]
 public class CommentDocument { }
 
+// Manual configuration
 services.AddMongoDbContext<WebSiteDbContext>(builder =>
 {
 	builder.ConnectionString = "mongodb://localhost:27017";
@@ -37,16 +38,33 @@ services.AddMongoDbContext<WebSiteDbContext>(builder =>
 		.UseIgnoreIfNull()
 		.UseIgnoreIfDefault();
 });
+
+// Configuration by appsettings.json
+services.AddMongoDbContext<WebSiteDbContext>(configuration.GetSection("MongoDb:Website"));
+
+// Register interface
 services.AddMongoDbContextExension<WebSiteDbContext, ICommentsDbContext>();
 ```
 
+## Using
 
-## Testing
+```
+var dbContext = serviceProvider.GetREquiredService<WebSiteDbContext>();
+var commentsDbContext = serviceProvider.GetREquiredService<ICommentsDbContext>();
+```
+
+## Testing with Mongo2Go
+
+NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB.Testing.Mongo2Go/](https://www.nuget.org/packages/BrandUp.MongoDB.Testing.Mongo2Go/)
+
+```
+services.AddMongo2GoDbClientFactory();
+```
+
+## Testing with BrandUp.MongoDB.Testing
 
 NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB.Testing/](https://www.nuget.org/packages/BrandUp.MongoDB.Testing/)
 
 ```
-
 services.AddFakeMongoDbClientFactory();
-
 ```
