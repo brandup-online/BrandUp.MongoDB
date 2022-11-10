@@ -1,11 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.1</TargetFramework>
+    <TargetFramework>net7.0</TargetFramework>
     <RootNamespace>BrandUp.MongoDB.Testing</RootNamespace>
     <Authors>Dmitry Kovyazin</Authors>
     <Company>BrandUp.online</Company>
-    <Product>BrandUp.MongoDB.Testing</Product>
+    <Product>BrandUp.MongoDB</Product>
     <PackageProjectUrl>https://github.com/dkovyazin/BrandUp.MongoDB</PackageProjectUrl>
     <RepositoryUrl>https://github.com/dkovyazin/BrandUp.MongoDB</RepositoryUrl>
   </PropertyGroup>
