@@ -21,7 +21,7 @@ namespace BrandUp.MongoDB
                 throw new ArgumentNullException(nameof(options.ClientFactory));
 
             disposeContextAction = options.DisposeContextAction;
-            var client = options.ClientFactory.CreateClient(options.Url);
+            var client = options.ClientFactory.GetClient(options.Url);
             Database = client.GetDatabase(options.Url.DatabaseName);
 
             foreach (var collectionOptions in options.Collections)

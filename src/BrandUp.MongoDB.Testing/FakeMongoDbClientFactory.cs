@@ -4,7 +4,7 @@ namespace BrandUp.MongoDB.Testing
 {
     public class FakeMongoDbClientFactory : IMongoDbClientFactory
     {
-        public IMongoClient CreateClient(MongoUrl url)
+        public IMongoClient GetClient(MongoUrl url)
         {
             return new FakeMongoClient(url);
         }

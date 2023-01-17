@@ -1,7 +1,5 @@
+using BrandUp.MongoDB.Testing.Mongo2Go.Tests.Models;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using System.Linq;
 using System.Threading.Tasks;
@@ -80,20 +78,5 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
             dbContext.Dispose();
         }
-    }
-
-    public class TestDbContext : MongoDbContext
-    {
-        public TestDbContext(MongoDbContextOptions options) : base(options) { }
-
-        public IMongoCollection<Document> Documents => GetCollection<Document>();
-    }
-
-    [Document(CollectionName = "Documents")]
-    public class Document
-    {
-        [BsonId(IdGenerator = typeof(ObjectIdGenerator)), BsonRepresentation(BsonType.ObjectId)]
-        public ObjectId Id { get; set; }
-        public string Name { get; set; }
     }
 }

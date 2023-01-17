@@ -1,29 +1,26 @@
 ﻿using Mongo2Go;
 using MongoDB.Driver;
 using System;
+using System.Collections.Generic;
 
 namespace BrandUp.MongoDB.Testing
 {
-    public class Mongo2GoDbClientFactory : IMongoDbClientFactory, IDisposable
+    public class Mongo2GoDbClientFactory : MongoDbClientFactory, IDisposable
     {
-        readonly MongoDbRunner runner;
-        private MongoClient client;
+        readonly Dictionary<string, MongoDbRunner> runners = new();
 
-        public Mongo2GoDbClientFactory()
+        protected override IMongoClient OnCreateClient(string key, MongoUrl mongoUrl)
         {
-            runner = MongoDbRunner.Start(singleNodeReplSet: true);
-            client = new MongoClient(runner.ConnectionString);
-        }
+            var runner = MongoDbRunner.Start(singleNodeReplSet: true);
+            runners.Add(key, runner);
 
-        public IMongoClient CreateClient(MongoUrl url)
-        {
-            return client;
+            return base.OnCreateClient(key, MongoUrl.Create(runner.ConnectionString));
         }
 
         public void Dispose()
         {
-            client = null;
-            runner.Dispose();
+            foreach (var runner in runners.Values)
+                runner.Dispose();
         }
     }
 }

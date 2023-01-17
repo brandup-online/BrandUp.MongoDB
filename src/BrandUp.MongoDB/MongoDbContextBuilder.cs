@@ -122,8 +122,6 @@ namespace BrandUp.MongoDB
 
             var mongoUrl = mongoUrlBuilder.ToMongoUrl();
             var clientFactory = provider.GetService<IMongoDbClientFactory>();
-            if (clientFactory == null)
-                clientFactory = MongoDbClientFactory.Instance;
 
             var options = new MongoDbContextOptions
             {

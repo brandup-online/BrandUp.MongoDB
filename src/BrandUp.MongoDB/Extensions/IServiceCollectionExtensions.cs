@@ -1,4 +1,5 @@
 ﻿using BrandUp.MongoDB;
+using BrandUp.MongoDB.Transactions;
 using Microsoft.Extensions.Configuration;
 using System;
 
@@ -20,6 +21,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             var config = configuration.Get<MongoDbContextConfiguration>();
 
+            services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
+
             services.AddMongoDbContext<TContext>(builder =>
             {
                 builder.ConnectionString = config.ConnectionString;
@@ -33,6 +36,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
                 builderAction?.Invoke(builder);
             });
+
+            services.AddTransactions();
 
             return services;
         }
@@ -49,6 +54,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddSingleton(builder.Build);
 
+            services.AddTransactions();
+
             return services;
         }
 
@@ -58,6 +65,13 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             services.AddTransient<TExtension>(s => s.GetService<TContext>());
             return services;
+        }
+
+        private static void AddTransactions(this IServiceCollection services)
+        {
+            services
+                .AddScoped<MongoDbTransactionFactory>()
+                .AddTransient<ITransactionFactory>((s) => s.GetRequiredService<MongoDbTransactionFactory>());
         }
     }
 }

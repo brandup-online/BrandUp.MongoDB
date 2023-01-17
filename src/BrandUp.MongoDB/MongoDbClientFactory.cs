@@ -1,27 +1,46 @@
 ﻿using MongoDB.Driver;
+using System;
 using System.Collections.Generic;
 
 namespace BrandUp.MongoDB
 {
+    /// <summary>
+    /// Фабрика клиентов MongoDb.
+    /// </summary>
     public interface IMongoDbClientFactory
     {
-        IMongoClient CreateClient(MongoUrl mongoUrl);
+        IMongoClient GetClient(MongoUrl mongoUrl);
     }
 
     public class MongoDbClientFactory : IMongoDbClientFactory
     {
-        public static readonly MongoDbClientFactory Instance = new MongoDbClientFactory();
-        private static readonly Dictionary<string, IMongoClient> _clients = new Dictionary<string, IMongoClient>();
+        readonly Dictionary<string, IMongoClient> clients = new();
 
-        private MongoDbClientFactory() { }
+        protected MongoDbClientFactory() { }
 
-        public IMongoClient CreateClient(MongoUrl mongoUrl)
+        #region IMongoDbClientFactory members
+
+        public IMongoClient GetClient(MongoUrl mongoUrl)
         {
-            var mongoUrlStr = mongoUrl.ToString();
-            if (!_clients.ContainsKey(mongoUrlStr))
-                _clients.Add(mongoUrlStr, new MongoClient(mongoUrl));
+            if (mongoUrl == null)
+                throw new ArgumentNullException(nameof(mongoUrl));
 
-            return _clients[mongoUrlStr];
+            var mongoUrlStr = mongoUrl.ToString();
+            if (!clients.ContainsKey(mongoUrlStr))
+            {
+                var client = OnCreateClient(mongoUrlStr, mongoUrl);
+
+                clients.Add(mongoUrlStr, client);
+            }
+
+            return clients[mongoUrlStr];
+        }
+
+        #endregion
+
+        protected virtual IMongoClient OnCreateClient(string key, MongoUrl mongoUrl)
+        {
+            return new MongoClient(mongoUrl);
         }
     }
 }
