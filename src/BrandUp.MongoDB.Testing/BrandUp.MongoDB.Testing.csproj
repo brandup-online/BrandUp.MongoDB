@@ -5,8 +5,8 @@
 	<Authors>Dmitry Kovyazin</Authors>
 	<Company>BrandUp.online</Company>
 	<Product>BrandUp.MongoDB</Product>
-	<PackageProjectUrl>https://github.com/dkovyazin/BrandUp.MongoDB</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/dkovyazin/BrandUp.MongoDB</RepositoryUrl>
+	<PackageProjectUrl>https://github.com/brandup-online/BrandUp.MongoDB</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/brandup-online/BrandUp.MongoDB</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>
