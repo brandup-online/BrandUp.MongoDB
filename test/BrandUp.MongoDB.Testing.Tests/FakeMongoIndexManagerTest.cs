@@ -1,17 +1,17 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using System;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
-using System;
 using Xunit;
 
 namespace BrandUp.MongoDB.Testing.Tests
 {
     public class FakeMongoIndexManagerTest
     {
-        IMongoCollection<Document> collection;
+        readonly IMongoCollection<Document> collection;
 
         public FakeMongoIndexManagerTest()
         {
-            var client = new FakeMongoClient(MongoUrl.Create("mongodb://localhost:27017"));
+            var client = new FakeMongoClient("mongodb://localhost:27017");
             var db = client.GetDatabase("test");
             collection = db.GetCollection<Document>("test");
         }

@@ -1,28 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
     public interface IMongoDbClientFactory
     {
-        IMongoClient CreateClient(MongoUrl mongoUrl);
+        IMongoClient ResolveClient(string connectionString);
     }
 
     public class MongoDbClientFactory : IMongoDbClientFactory
     {
-        static readonly Dictionary<string, IMongoClient> _clients = new();
+        static readonly ConcurrentDictionary<string, IMongoClient> clients = new();
 
-        public IMongoClient CreateClient(MongoUrl mongoUrl)
+        public IMongoClient ResolveClient(string connectionString)
         {
-            if (mongoUrl == null)
-                throw new ArgumentNullException(nameof(mongoUrl));
+            if (connectionString == null)
+                throw new ArgumentNullException(nameof(connectionString));
 
-            var mongoUrlStr = mongoUrl.ToString();
-            if (!_clients.ContainsKey(mongoUrlStr))
-                _clients.Add(mongoUrlStr, new MongoClient(mongoUrl));
+            var mongoUrlBuilder = new MongoUrlBuilder(connectionString)
+            {
+                DatabaseName = null
+            };
+            var mongoUrl = mongoUrlBuilder.ToMongoUrl();
+            var mongoUrlStr = mongoUrl.Url.ToLower();
 
-            return _clients[mongoUrlStr];
+            var mongoClient = clients.GetOrAdd(mongoUrlStr, _ =>
+            {
+                return new MongoClient(mongoUrl);
+            });
+
+            return mongoClient;
         }
     }
 }

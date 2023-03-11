@@ -1,5 +1,4 @@
-﻿using MongoDB.Driver;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Xunit;
 
 namespace BrandUp.MongoDB.Testing.Tests
@@ -10,7 +9,7 @@ namespace BrandUp.MongoDB.Testing.Tests
 
         public FakeMongoClientTest()
         {
-            client = new FakeMongoClient(MongoUrl.Create("mongodb://localhost:27017"));
+            client = new FakeMongoClient("mongodb://localhost:27017");
         }
 
         [Fact]

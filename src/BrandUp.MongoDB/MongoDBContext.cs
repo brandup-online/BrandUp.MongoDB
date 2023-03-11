@@ -1,50 +1,53 @@
 ﻿using System;
 using System.Collections.Generic;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
     public abstract class MongoDbContext : IDisposable
     {
-        readonly List<IMongoDbCollectionContext> collections = new();
-        readonly Dictionary<Type, int> collectionDocumentTypes = new();
+        MongoDbContextOptions options;
+        readonly List<IMongoDbCollectionMetadata> collections = new();
+        readonly Dictionary<Type, int> collectionTypes = new();
         readonly Dictionary<string, int> collectionNames = new();
-        readonly Action disposeContextAction;
 
-        public IMongoDatabase Database { get; }
-
-        protected MongoDbContext(MongoDbContextOptions options)
-        {
-            if (options == null)
-                throw new ArgumentNullException(nameof(options));
-            if (options.ClientFactory == null)
-                throw new ArgumentNullException(nameof(options.ClientFactory));
-
-            disposeContextAction = options.DisposeContextAction;
-            var client = options.ClientFactory.CreateClient(options.Url);
-            Database = client.GetDatabase(options.Url.DatabaseName);
-
-            foreach (var collectionOptions in options.Collections)
-            {
-                var collectionContext = collectionOptions.BuildContext();
-
-                collectionContext.Initialize(collectionOptions.CollectionName, this);
-
-                var index = collections.Count;
-                collections.Add(collectionContext);
-                collectionDocumentTypes.Add(collectionContext.DocumentType, index);
-                collectionNames.Add(collectionContext.CollectionName.ToLower(), index);
-            }
-        }
+        public IMongoDatabase Database { get; private set; }
+        public IEnumerable<IMongoDbCollectionMetadata> Collections => collections;
 
         #region Methods
 
-        internal bool TryGetCollectionContext(Type documentType, out IMongoDbCollectionContext collectionContext)
+        internal void Initialize(IServiceProvider serviceProvider, List<IMongoDbCollectionMetadata> collections)
+        {
+            var mongoClientFactory = serviceProvider.GetRequiredService<IMongoDbClientFactory>();
+
+            var optionsFactory = serviceProvider.GetRequiredService<IOptionsFactory<MongoDbContextOptions>>();
+
+            var optionsName = GetType().FullName;
+            options = optionsFactory.Create(optionsName);
+
+            var mongoClient = mongoClientFactory.ResolveClient(options.ConnectionString);
+            Database = mongoClient.GetDatabase(options.DatabaseName, new MongoDatabaseSettings());
+
+            var i = 0;
+            foreach (var collection in collections)
+            {
+                collection.Initialize(this);
+
+                this.collections.Add(collection);
+                collectionTypes.Add(collection.DocumentType, i);
+                collectionNames.Add(collection.CollectionName, i);
+
+                i++;
+            }
+        }
+        internal bool TryGetCollectionContext(Type documentType, out IMongoDbCollectionMetadata collectionContext)
         {
             if (documentType == null)
                 throw new ArgumentNullException(nameof(documentType));
 
-            if (!collectionDocumentTypes.TryGetValue(documentType, out int index))
+            if (!collectionTypes.TryGetValue(documentType, out int index))
             {
                 collectionContext = null;
                 return false;
@@ -53,7 +56,7 @@ namespace BrandUp.MongoDB
             collectionContext = collections[index];
             return true;
         }
-        internal bool TryGetCollectionContext(string collectionName, out IMongoDbCollectionContext collectionContext)
+        internal bool TryGetCollectionContext(string collectionName, out IMongoDbCollectionMetadata collectionContext)
         {
             if (collectionName == null)
                 throw new ArgumentNullException(nameof(collectionName));
@@ -67,22 +70,22 @@ namespace BrandUp.MongoDB
             collectionContext = collections[index];
             return true;
         }
-        public bool TryGetCollectionContext<TDocument>(out MongoDbCollectionContext<TDocument> collectionContext)
+        public bool TryGetCollectionContext<TDocument>(out MongoDbCollectionMetadata<TDocument> collectionContext)
             where TDocument : class
         {
-            if (!TryGetCollectionContext(typeof(TDocument), out IMongoDbCollectionContext collectionMetadata2))
+            if (!TryGetCollectionContext(typeof(TDocument), out IMongoDbCollectionMetadata collectionMetadata2))
             {
                 collectionContext = null;
                 return false;
             }
 
-            collectionContext = (MongoDbCollectionContext<TDocument>)collectionMetadata2;
+            collectionContext = (MongoDbCollectionMetadata<TDocument>)collectionMetadata2;
             return true;
         }
-        public MongoDbCollectionContext<TDocument> GetCollectionContext<TDocument>()
+        public MongoDbCollectionMetadata<TDocument> GetCollectionContext<TDocument>()
             where TDocument : class
         {
-            if (!TryGetCollectionContext(out MongoDbCollectionContext<TDocument> collectionContext))
+            if (!TryGetCollectionContext(out MongoDbCollectionMetadata<TDocument> collectionContext))
                 throw new ArgumentException();
 
             return collectionContext;
@@ -90,7 +93,7 @@ namespace BrandUp.MongoDB
         public IMongoCollection<TDocument> GetCollection<TDocument>()
             where TDocument : class
         {
-            if (!TryGetCollectionContext(out MongoDbCollectionContext<TDocument> collectionContext))
+            if (!TryGetCollectionContext(out MongoDbCollectionMetadata<TDocument> collectionContext))
                 throw new ArgumentException();
 
             return collectionContext.Collection;
@@ -105,12 +108,7 @@ namespace BrandUp.MongoDB
         protected virtual void Dispose(bool disposing)
         {
             if (!disposedValue)
-            {
-                if (disposing)
-                    disposeContextAction();
-
                 disposedValue = true;
-            }
         }
 
         public void Dispose()

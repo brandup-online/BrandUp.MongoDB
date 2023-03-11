@@ -7,7 +7,10 @@ namespace BrandUp.MongoDB.Testing
     public class Mongo2GoDbClientFactory : IMongoDbClientFactory, IDisposable
     {
         readonly MongoDbRunner runner;
-        MongoClient client;
+        readonly MongoClient client;
+
+        public MongoDbRunner Runner => runner;
+        public MongoClient Client => client;
 
         public Mongo2GoDbClientFactory()
         {
@@ -15,15 +18,14 @@ namespace BrandUp.MongoDB.Testing
             client = new MongoClient(runner.ConnectionString);
         }
 
-        public IMongoClient CreateClient(MongoUrl url)
+        public IMongoClient ResolveClient(string connectionString)
         {
             return client;
         }
 
         public void Dispose()
         {
-            client = null;
-            runner.Dispose();
+            runner?.Dispose();
         }
     }
 }

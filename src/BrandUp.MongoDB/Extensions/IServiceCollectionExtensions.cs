@@ -1,28 +1,49 @@
 ﻿using System;
 using BrandUp.MongoDB;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class IServiceCollectionExtensions
     {
-        public static IMongoDbContextBuilder AddMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextConfiguration> configAction)
+        public static IServiceCollection AddMongoDb(this IServiceCollection services)
+        {
+            services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
+
+            return services;
+        }
+
+        public static MongoDbContextBuilder<TContext> AddMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextOptions> configureOptions)
             where TContext : MongoDbContext
         {
-            if (configAction == null)
-                throw new ArgumentNullException(nameof(configAction));
+            if (configureOptions == null)
+                throw new ArgumentNullException(nameof(configureOptions));
 
-            var builder = new MongoDbContextBuilder<TContext>();
+            var contextType = typeof(TContext);
+
+            services
+                .AddOptions<MongoDbContextOptions>(contextType.FullName)
+                .Configure(configureOptions);
+
+            services.AddSingleton<IValidateOptions<MongoDbContextOptions>, MongoDbContextOptionsValidator>();
+
+            var builder = new MongoDbContextBuilder<TContext>(services);
 
             services.AddSingleton(builder.Build);
 
             return builder;
         }
 
-        public static IServiceCollection AddMongoDbContextExension<TContext, TExtension>(this IServiceCollection services)
-            where TContext : MongoDbContext, TExtension
-            where TExtension : class
+        public static IServiceCollection ConfigureMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextOptions> configureOptions)
+            where TContext : MongoDbContext
         {
-            services.AddTransient<TExtension>(s => s.GetService<TContext>());
+            if (configureOptions == null)
+                throw new ArgumentNullException(nameof(configureOptions));
+
+            var contextType = typeof(TContext);
+
+            services.Configure(contextType.FullName, configureOptions);
+
             return services;
         }
     }

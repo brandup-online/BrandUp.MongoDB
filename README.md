@@ -11,7 +11,6 @@ NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB/](https://www.nug
 ```
 public class WebSiteDbContext : MongoDbContext, ICommentsDbContext
 {
-	public TestDbContext(MongoDbContextOptions options) : base(options) { }
 
 	public IMongoCollection<ArticleDocument> Articles => GetCollection<ArticleDocument>();
 	
@@ -23,28 +22,23 @@ public interface ICommentsDbContext
 	IMongoCollection<CommentDocument> Comments { get; }
 }
 
-[Document(CollectionName = "Articles")]
+[MongoCollection(CollectionName = "Articles")]
 public class ArticleDocument { }
 
-[Document(CollectionName = "Comments")]
+[MongoCollection(CollectionName = "Comments")]
 public class CommentDocument { }
 
-// Manual configuration
-services.AddMongoDbContext<WebSiteDbContext>(builder =>
-{
-	builder.ConnectionString = "mongodb://localhost:27017";
-	builder.DatabaseName = "WebSite";
-	builder
-		.UseCamelCaseElementName()
-		.UseIgnoreIfNull()
-		.UseIgnoreIfDefault();
-});
-
-// Configuration by appsettings.json
-services.AddMongoDbContext<WebSiteDbContext>(configuration.GetSection("MongoDb:Website"));
-
-// Register interface
-services.AddMongoDbContextExension<WebSiteDbContext, ICommentsDbContext>();
+// Configuration
+services.AddMongoDb();
+services.AddMongoDbContext<WebSiteDbContext>(options =>
+	{
+		options.ConnectionString = "mongodb://localhost:27017";
+		options.DatabaseName = "WebSite";
+	})
+	.AddExtension<WebSiteDbContext, ICommentsDbContext>()
+	.UseCamelCaseElementName()
+	.UseIgnoreIfNull(true)
+	.UseIgnoreIfDefault(false);
 ```
 
 ## Using
@@ -59,7 +53,7 @@ var commentsDbContext = serviceProvider.GetRequiredService<ICommentsDbContext>()
 NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB.Testing.Mongo2Go/](https://www.nuget.org/packages/BrandUp.MongoDB.Testing.Mongo2Go/)
 
 ```
-services.AddMongo2GoDbClientFactory();
+services.AddTestMongoDb();
 ```
 
 ## Testing with BrandUp.MongoDB.Testing
@@ -67,5 +61,5 @@ services.AddMongo2GoDbClientFactory();
 NuGet-package: [https://www.nuget.org/packages/BrandUp.MongoDB.Testing/](https://www.nuget.org/packages/BrandUp.MongoDB.Testing/)
 
 ```
-services.AddFakeMongoDbClientFactory();
+services.AddFakeMongoDb();
 ```

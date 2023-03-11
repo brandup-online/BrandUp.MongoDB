@@ -1,19 +1,19 @@
-﻿using MongoDB.Bson;
-using MongoDB.Driver;
-using MongoDB.Driver.Core.Clusters;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Driver;
+using MongoDB.Driver.Core.Clusters;
 
 namespace BrandUp.MongoDB.Testing
 {
     public class FakeMongoClient : IMongoClient
     {
-        private readonly Dictionary<string, FakeMongoDatabase> databases = new Dictionary<string, FakeMongoDatabase>();
+        readonly Dictionary<string, FakeMongoDatabase> databases = new();
 
-        public FakeMongoClient(MongoUrl url)
+        public FakeMongoClient(string connectionString)
         {
-            Settings = MongoClientSettings.FromUrl(url);
+            Settings = MongoClientSettings.FromConnectionString(connectionString);
         }
 
         #region IMongoClient members

@@ -1,13 +1,23 @@
-﻿using MongoDB.Bson.Serialization.Conventions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization.Conventions;
 
 namespace BrandUp.MongoDB
 {
-    public static class MongoDbContextOptionsBuilderExtensions
+    public static class MongoDbContextBuilderExtensions
     {
+        public static MongoDbContextBuilder<TContext> AddExtension<TContext, TExtension>(this MongoDbContextBuilder<TContext> builder)
+            where TContext : MongoDbContext, TExtension
+            where TExtension : class
+        {
+            builder.Services.AddTransient<TExtension>(s => s.GetService<TContext>());
+
+            return builder;
+        }
+
         public static IMongoDbContextBuilder AddCollection<TDocument>(this IMongoDbContextBuilder builder)
             where TDocument : class
         {
-            builder.AddCollection(typeof(TDocument));
+            builder.RegisterCollection(typeof(TDocument));
 
             return builder;
         }

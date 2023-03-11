@@ -1,5 +1,4 @@
 ﻿using System.Collections.Generic;
-using System.Threading;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
@@ -11,7 +10,7 @@ namespace BrandUp.MongoDB.Tests
     {
         readonly TestService testService;
 
-        public TestDbContext(MongoDbContextOptions options, TestService testService) : base(options)
+        public TestDbContext(TestService testService)
         {
             this.testService = testService ?? throw new System.ArgumentNullException(nameof(testService));
         }
@@ -21,27 +20,23 @@ namespace BrandUp.MongoDB.Tests
         public IMongoCollection<TaskDocument> Tasks => GetCollection<TaskDocument>();
     }
 
-    public class TestService
-    {
-
-    }
+    public class TestService { }
 
     public interface IWorkerDbContext
     {
         IMongoCollection<TaskDocument> Tasks { get; }
     }
 
-    [Document(CollectionName = "Documents")]
-    [DocumentKnownType(typeof(ArticleDocument))]
+    [MongoCollection(CollectionName = "Documents")]
+    [BsonKnownTypes(typeof(ArticleDocument))]
     public abstract class Document
     {
         [BsonId(IdGenerator = typeof(ObjectIdGenerator)), BsonRepresentation(BsonType.ObjectId)]
         public string Id { get; set; }
     }
 
-    [Document]
-    [DocumentKnownType(typeof(NewsDocument))]
-    [BsonKnownTypes(typeof(News2Document))]
+    [MongoCollection]
+    [BsonKnownTypes(typeof(NewsDocument), typeof(News2Document))]
     public class ArticleDocument : Document
     {
         public SeoOptions Seo { get; set; }
@@ -69,43 +64,13 @@ namespace BrandUp.MongoDB.Tests
 
     }
 
-
-
-    [Document(CollectionName = "Tasks", CollectionContextType = typeof(TaskDocumentCollectionContext))]
+    [MongoCollection(CollectionName = "Tasks")]
     public class TaskDocument : Document
     {
 
     }
 
-    public class TaskDocumentCollectionContext : MongoDbCollectionContext<TaskDocument>
-    {
-        public bool IsGetCollectionSettings { get; private set; }
-        public bool IsGetCreationOptions { get; private set; }
-        public bool IsOnSetupCollection { get; private set; }
-
-        protected override MongoCollectionSettings GetCollectionSettings()
-        {
-            IsGetCollectionSettings = true;
-
-            return base.GetCollectionSettings();
-        }
-
-        protected override CreateCollectionOptions GetCreationOptions()
-        {
-            IsGetCreationOptions = true;
-
-            return base.GetCreationOptions();
-        }
-
-        protected override void OnSetupCollection(CancellationToken cancellationToken = default)
-        {
-            IsOnSetupCollection = true;
-
-            base.OnSetupCollection(cancellationToken);
-        }
-    }
-
-    [Document]
+    [MongoCollection]
     public class CommentDocument : Document
     {
 

@@ -4,7 +4,7 @@ namespace BrandUp.MongoDB
 {
     public static class IServiceCollectionExtensions
     {
-        public static IServiceCollection AddMongo2GoDbClientFactory(this IServiceCollection services)
+        public static IServiceCollection AddTestMongoDb(this IServiceCollection services)
         {
             return services.AddSingleton<IMongoDbClientFactory, Testing.Mongo2GoDbClientFactory>();
         }

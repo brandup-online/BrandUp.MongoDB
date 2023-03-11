@@ -1,5 +1,4 @@
-﻿using MongoDB.Driver;
-using Xunit;
+﻿using Xunit;
 
 namespace BrandUp.MongoDB.Testing.Tests
 {
@@ -9,7 +8,7 @@ namespace BrandUp.MongoDB.Testing.Tests
 
         public FakeClientSessionHandleTest()
         {
-            client = new FakeMongoClient(MongoUrl.Create("mongodb://localhost:27017"));
+            client = new FakeMongoClient("mongodb://localhost:27017");
         }
 
         [Fact]

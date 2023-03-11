@@ -1,36 +1,21 @@
-﻿using MongoDB.Driver;
-using System;
-using System.Collections.Generic;
+﻿using Microsoft.Extensions.Options;
 
 namespace BrandUp.MongoDB
 {
     public class MongoDbContextOptions
     {
-        public IMongoDbClientFactory ClientFactory { get; set; }
-        public MongoUrl Url { get; set; }
-        public List<MongoDbCollectionOptions> Collections { get; } = new List<MongoDbCollectionOptions>();
-        internal Action DisposeContextAction { get; set; }
+        public string ConnectionString { get; set; } = MongoDbDefaults.LocalConnectionString;
+        public string DatabaseName { get; set; }
     }
 
-    public class MongoDbCollectionOptions
+    public class MongoDbContextOptionsValidator : IValidateOptions<MongoDbContextOptions>
     {
-        public string CollectionName { get; }
-        public Type DocumentType { get; }
-        public Type ContextType { get; set; }
-
-        public MongoDbCollectionOptions(string collectionName, Type documentType)
+        public ValidateOptionsResult Validate(string name, MongoDbContextOptions options)
         {
-            CollectionName = collectionName ?? throw new ArgumentNullException(nameof(collectionName));
-            DocumentType = documentType ?? throw new ArgumentNullException(nameof(documentType));
-        }
+            if (string.IsNullOrWhiteSpace(options.DatabaseName))
+                return ValidateOptionsResult.Fail($"Paramenter {nameof(MongoDbContextOptions.DatabaseName)} is required.");
 
-        internal IMongoDbCollectionContext BuildContext()
-        {
-            var contextType = ContextType;
-            if (contextType == null)
-                contextType = typeof(MongoDbCollectionContext<>).MakeGenericType(DocumentType);
-
-            return (IMongoDbCollectionContext)Activator.CreateInstance(contextType);
+            return ValidateOptionsResult.Success;
         }
     }
 }
