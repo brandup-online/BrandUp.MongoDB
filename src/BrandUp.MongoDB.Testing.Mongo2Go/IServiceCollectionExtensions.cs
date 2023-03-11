@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using BrandUp.MongoDB.Testing;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace BrandUp.MongoDB
 {
@@ -6,7 +7,7 @@ namespace BrandUp.MongoDB
     {
         public static IServiceCollection AddTestMongoDb(this IServiceCollection services)
         {
-            return services.AddSingleton<IMongoDbClientFactory, Testing.Mongo2GoDbClientFactory>();
+            return services.AddSingleton<IMongoDbClientFactory, Mongo2GoDbClientFactory>();
         }
     }
 }

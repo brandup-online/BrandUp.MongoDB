@@ -101,7 +101,7 @@ namespace BrandUp.MongoDB
 
         #endregion
 
-        #region IDisposable Support
+        #region IDisposable members
 
         private bool disposedValue = false;
 
