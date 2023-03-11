@@ -1,13 +1,13 @@
-﻿using Mongo2Go;
+﻿using System;
+using Mongo2Go;
 using MongoDB.Driver;
-using System;
 
 namespace BrandUp.MongoDB.Testing
 {
     public class Mongo2GoDbClientFactory : IMongoDbClientFactory, IDisposable
     {
         readonly MongoDbRunner runner;
-        private MongoClient client;
+        MongoClient client;
 
         public Mongo2GoDbClientFactory()
         {

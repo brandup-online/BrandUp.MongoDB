@@ -1,18 +1,18 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.Conventions;
-using MongoDB.Driver;
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Bson.Serialization.Conventions;
+using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
     public interface IMongoDbContextBuilder
     {
-        Type DbContextType { get; }
+        Type ContextType { get; }
         string ConnectionString { get; set; }
         string DatabaseName { get; set; }
         ConventionPack Conventions { get; }
@@ -25,17 +25,17 @@ namespace BrandUp.MongoDB
     public class MongoDbContextBuilder<TContext> : IMongoDbContextBuilder
         where TContext : MongoDbContext
     {
-        private readonly List<MongoDbCollectionOptions> collections = new List<MongoDbCollectionOptions>();
-        private readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
-        private readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
-        private readonly HashSet<Type> documentTypes = new HashSet<Type>();
-        private TContext dbContext;
+        readonly List<MongoDbCollectionOptions> collections = new();
+        readonly Dictionary<Type, int> collectionDocumentTypes = new();
+        readonly Dictionary<string, int> collectionNames = new();
+        readonly HashSet<Type> documentTypes = new();
+        TContext dbContext;
 
         public MongoDbContextBuilder()
         {
-            DbContextType = typeof(TContext);
+            ContextType = typeof(TContext);
 
-            var properties = DbContextType.GetProperties();
+            var properties = ContextType.GetProperties();
             foreach (var property in properties)
             {
                 var propertyType = property.PropertyType;
@@ -50,7 +50,7 @@ namespace BrandUp.MongoDB
 
         #region IMongoDbContextBuilder members
 
-        public Type DbContextType { get; }
+        public Type ContextType { get; }
         public string ConnectionString { get; set; } = MongoDbDefaults.LocalConnectionString;
         public string DatabaseName { get; set; }
         public ConventionPack Conventions { get; } = new ConventionPack();
@@ -107,7 +107,37 @@ namespace BrandUp.MongoDB
 
         #endregion
 
-        private MongoDbContextOptions BuildOptions(IServiceProvider provider)
+        public TContext Build(IServiceProvider serviceProvider)
+        {
+            if (dbContext != null)
+                throw new InvalidOperationException($"Context {typeof(TContext).AssemblyQualifiedName} is already builded.");
+
+            var dbContextOptions = BuildOptions(serviceProvider);
+            var dbContextName = ContextType.FullName;
+
+            ConventionRegistry.Remove(dbContextName);
+            RegisterConventions(dbContextName);
+
+            var constructor = ContextType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
+
+            var constructorParamsInfo = constructor.GetParameters();
+            var constratorParams = new object[constructorParamsInfo.Length];
+            var i = 0;
+            foreach (var p in constructorParamsInfo)
+            {
+                if (p.ParameterType == typeof(MongoDbContextOptions))
+                    constratorParams[i] = dbContextOptions;
+                else
+                    constratorParams[i] = serviceProvider.GetService(p.ParameterType);
+                i++;
+            }
+
+            dbContext = (TContext)constructor.Invoke(constratorParams);
+
+            return dbContext;
+        }
+
+        MongoDbContextOptions BuildOptions(IServiceProvider provider)
         {
             if (ConnectionString == null)
                 throw new InvalidOperationException($"Not set {nameof(ConnectionString)} value.");
@@ -122,8 +152,6 @@ namespace BrandUp.MongoDB
 
             var mongoUrl = mongoUrlBuilder.ToMongoUrl();
             var clientFactory = provider.GetService<IMongoDbClientFactory>();
-            if (clientFactory == null)
-                clientFactory = MongoDbClientFactory.Instance;
 
             var options = new MongoDbContextOptions
             {
@@ -135,44 +163,7 @@ namespace BrandUp.MongoDB
 
             return options;
         }
-
-        public TContext Build(IServiceProvider provider)
-        {
-            if (dbContext != null)
-                throw new InvalidOperationException($"Context {typeof(TContext).AssemblyQualifiedName} is already builded.");
-
-            var dbContextOptions = BuildOptions(provider);
-            var dbContextType = DbContextType;
-            var dbContextName = dbContextType.FullName;
-
-            dbContextOptions.DisposeContextAction = () =>
-            {
-                //ConventionRegistry.Remove(dbContextName);
-            };
-
-            ConventionRegistry.Remove(dbContextName);
-            RegisterConventions(dbContextName);
-
-            var constructor = dbContextType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
-
-            var constructorParamsInfo = constructor.GetParameters();
-            var constratorParams = new object[constructorParamsInfo.Length];
-            var i = 0;
-            foreach (var p in constructorParamsInfo)
-            {
-                if (p.ParameterType == typeof(MongoDbContextOptions))
-                    constratorParams[i] = dbContextOptions;
-                else
-                    constratorParams[i] = provider.GetService(p.ParameterType);
-                i++;
-            }
-
-            dbContext = (TContext)constructor.Invoke(constratorParams);
-
-            return dbContext;
-        }
-
-        private void AddDocumentType(Type type)
+        void AddDocumentType(Type type)
         {
             if (documentTypes.Contains(type) || type == typeof(object))
                 return;
@@ -229,7 +220,7 @@ namespace BrandUp.MongoDB
 
             AddDocumentType(type.BaseType);
         }
-        private void RegisterConventions(string name)
+        void RegisterConventions(string name)
         {
             ConventionRegistry.Register(name, Conventions, documentTypes.Contains);
         }

@@ -2,6 +2,6 @@
 {
     public static class MongoDbDefaults
     {
-        public static string LocalConnectionString = "mongodb://localhost:27017";
+        public const string LocalConnectionString = "mongodb://localhost:27017";
     }
 }

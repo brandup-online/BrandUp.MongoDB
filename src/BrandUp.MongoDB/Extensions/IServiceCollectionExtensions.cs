@@ -1,55 +1,21 @@
-﻿using BrandUp.MongoDB;
-using Microsoft.Extensions.Configuration;
-using System;
+﻿using System;
+using BrandUp.MongoDB;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
     public static class IServiceCollectionExtensions
     {
-        public static IServiceCollection AddMongoDbContext<TContext>(this IServiceCollection services, IConfiguration configuration)
+        public static IMongoDbContextBuilder AddMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextConfiguration> configAction)
             where TContext : MongoDbContext
         {
-            return AddMongoDbContext<TContext>(services, configuration, null);
-        }
-
-        public static IServiceCollection AddMongoDbContext<TContext>(this IServiceCollection services, IConfiguration configuration, Action<IMongoDbContextBuilder> builderAction)
-            where TContext : MongoDbContext
-        {
-            if (configuration == null)
-                throw new ArgumentNullException(nameof(configuration));
-
-            var config = configuration.Get<MongoDbContextConfiguration>();
-
-            services.AddMongoDbContext<TContext>(builder =>
-            {
-                builder.ConnectionString = config.ConnectionString;
-                builder.DatabaseName = config.DatabaseName;
-
-                if (config.CamelCase)
-                    builder.UseCamelCaseElementName();
-
-                builder.UseIgnoreIfDefault(config.IgnoreIfDefault);
-                builder.UseIgnoreIfNull(config.IgnoreIfNull);
-
-                builderAction?.Invoke(builder);
-            });
-
-            return services;
-        }
-
-        public static IServiceCollection AddMongoDbContext<TContext>(this IServiceCollection services, Action<IMongoDbContextBuilder> builderAction)
-            where TContext : MongoDbContext
-        {
-            if (builderAction == null)
-                throw new ArgumentNullException(nameof(builderAction));
+            if (configAction == null)
+                throw new ArgumentNullException(nameof(configAction));
 
             var builder = new MongoDbContextBuilder<TContext>();
 
-            builderAction.Invoke(builder);
-
             services.AddSingleton(builder.Build);
 
-            return services;
+            return builder;
         }
 
         public static IServiceCollection AddMongoDbContextExension<TContext, TExtension>(this IServiceCollection services)

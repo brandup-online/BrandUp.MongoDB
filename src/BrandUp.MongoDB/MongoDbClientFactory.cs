@@ -1,5 +1,6 @@
-﻿using MongoDB.Driver;
+﻿using System;
 using System.Collections.Generic;
+using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
@@ -10,13 +11,13 @@ namespace BrandUp.MongoDB
 
     public class MongoDbClientFactory : IMongoDbClientFactory
     {
-        public static readonly MongoDbClientFactory Instance = new MongoDbClientFactory();
-        private static readonly Dictionary<string, IMongoClient> _clients = new Dictionary<string, IMongoClient>();
-
-        private MongoDbClientFactory() { }
+        static readonly Dictionary<string, IMongoClient> _clients = new();
 
         public IMongoClient CreateClient(MongoUrl mongoUrl)
         {
+            if (mongoUrl == null)
+                throw new ArgumentNullException(nameof(mongoUrl));
+
             var mongoUrlStr = mongoUrl.ToString();
             if (!_clients.ContainsKey(mongoUrlStr))
                 _clients.Add(mongoUrlStr, new MongoClient(mongoUrl));

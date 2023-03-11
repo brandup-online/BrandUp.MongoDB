@@ -1,15 +1,15 @@
-﻿using MongoDB.Bson;
+﻿using System.Collections.Generic;
+using System.Threading;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
-using System.Collections.Generic;
-using System.Threading;
 
 namespace BrandUp.MongoDB.Tests
 {
     public class TestDbContext : MongoDbContext, IWorkerDbContext
     {
-        private readonly TestService testService;
+        readonly TestService testService;
 
         public TestDbContext(MongoDbContextOptions options, TestService testService) : base(options)
         {

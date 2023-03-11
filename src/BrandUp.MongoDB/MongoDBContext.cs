@@ -1,14 +1,14 @@
-﻿using MongoDB.Driver;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
     public abstract class MongoDbContext : IDisposable
     {
-        readonly List<IMongoDbCollectionContext> collections = new List<IMongoDbCollectionContext>();
-        readonly Dictionary<Type, int> collectionDocumentTypes = new Dictionary<Type, int>();
-        readonly Dictionary<string, int> collectionNames = new Dictionary<string, int>();
+        readonly List<IMongoDbCollectionContext> collections = new();
+        readonly Dictionary<Type, int> collectionDocumentTypes = new();
+        readonly Dictionary<string, int> collectionNames = new();
         readonly Action disposeContextAction;
 
         public IMongoDatabase Database { get; }
@@ -107,9 +107,7 @@ namespace BrandUp.MongoDB
             if (!disposedValue)
             {
                 if (disposing)
-                {
                     disposeContextAction();
-                }
 
                 disposedValue = true;
             }

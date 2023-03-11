@@ -1,17 +1,17 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Conventions;
 using MongoDB.Driver;
-using System.Linq;
-using System.Threading.Tasks;
 using Xunit;
 
 namespace BrandUp.MongoDB.Tests
 {
     public class MongoDbContextBuilderTests : IAsyncLifetime
     {
-        private MongoDbContextBuilder<TestDbContext> builder;
-        private TestDbContext dbContext;
+        MongoDbContextBuilder<TestDbContext> builder;
+        TestDbContext dbContext;
 
         #region IAsyncLifetime members
 
