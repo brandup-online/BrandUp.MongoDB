@@ -1,10 +1,8 @@
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using BrandUp.MongoDB.Testing.Mongo2Go.Tests.Models;
 using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Bson.Serialization.IdGenerators;
 using MongoDB.Driver;
 using Xunit;
 
@@ -120,31 +118,5 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
             Assert.Equal(0, countDocuments);
         }
-    }
-
-    public class TestDbContext : MongoDbContext
-    {
-        public IMongoCollection<Document> Documents => GetCollection<Document>();
-    }
-
-    [MongoCollection(CollectionName = "Documents")]
-    public abstract class Document
-    {
-        [BsonId(IdGenerator = typeof(ObjectIdGenerator)), BsonRepresentation(BsonType.ObjectId)]
-        public ObjectId Id { get; set; }
-        [BsonRequired]
-        public string Name { get; set; }
-    }
-
-    public class ArticleDocument : Document
-    {
-        [BsonRequired]
-        public string Author { get; set; }
-    }
-
-    public class NewsDocument : Document
-    {
-        [BsonRequired]
-        public DateTime Date { get; set; }
     }
 }

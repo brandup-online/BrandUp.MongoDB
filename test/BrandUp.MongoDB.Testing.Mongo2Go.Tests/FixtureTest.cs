@@ -1,7 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BrandUp.MongoDB.Testing.Mongo2Go.Tests.Models;
 using Microsoft.Extensions.DependencyInjection;
 using Mongo2Go;
 using MongoDB.Driver;
@@ -81,21 +83,20 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
     public class FakeMongoDbInstance : IMongoDbClientFactory, IAsyncLifetime
     {
-        readonly string[] SystemDatabaseNames = new string[] { "admin", "config", "local" };
-
         MongoDbRunner runner;
         MongoClient client;
+        List<string> systemDatabaseNames;
 
         public MongoClient Client => client;
 
         #region IAsyncLifetime members
 
-        Task IAsyncLifetime.InitializeAsync()
+        async Task IAsyncLifetime.InitializeAsync()
         {
             runner = MongoDbRunner.Start(singleNodeReplSet: true);
             client = new MongoClient(runner.ConnectionString);
 
-            return Task.CompletedTask;
+            systemDatabaseNames = await (await client.ListDatabaseNamesAsync()).ToListAsync();
         }
 
         Task IAsyncLifetime.DisposeAsync()
@@ -123,7 +124,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             var databaseNames = await (await client.ListDatabaseNamesAsync(new ListDatabaseNamesOptions { AuthorizedDatabases = true }, cancellation.Token)).ToListAsync(cancellation.Token);
             foreach (var dbName in databaseNames)
             {
-                if (SystemDatabaseNames.Contains(dbName, StringComparer.InvariantCultureIgnoreCase))
+                if (systemDatabaseNames.Contains(dbName, StringComparer.InvariantCultureIgnoreCase))
                     continue;
 
                 await client.DropDatabaseAsync(dbName, cancellation.Token);

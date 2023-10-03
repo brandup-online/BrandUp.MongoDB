@@ -1,12 +1,13 @@
-﻿using MongoDB.Bson;
-using MongoDB.Bson.IO;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MongoDB.Bson;
+using MongoDB.Bson.IO;
+using MongoDB.Bson.Serialization;
+using MongoDB.Driver;
+using MongoDB.Driver.Search;
 
 namespace BrandUp.MongoDB.Testing
 {
@@ -32,6 +33,8 @@ namespace BrandUp.MongoDB.Testing
         public IBsonSerializer<TDocument> DocumentSerializer { get; }
         public IMongoIndexManager<TDocument> Indexes => indexManager;
         public MongoCollectionSettings Settings { get; }
+
+        public IMongoSearchIndexManager SearchIndexes => throw new NotImplementedException();
 
         public IQueryable<TDocument> GetDocuemntsQueryable()
         {
