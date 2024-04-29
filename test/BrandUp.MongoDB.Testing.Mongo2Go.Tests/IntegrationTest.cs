@@ -8,7 +8,7 @@ using Xunit;
 
 namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 {
-    public class IntegrationTests
+    public class IntegrationTest
     {
         [Fact]
         public async Task Test1Async()

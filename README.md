@@ -29,10 +29,10 @@ public class ArticleDocument { }
 public class CommentDocument { }
 
 // Configuration
-services.AddMongoDb();
+services.AddMongoDb(options => { options.ConnectionString = "mongodb://localhost:27017"; });
+
 services.AddMongoDbContext<WebSiteDbContext>(options =>
 	{
-		options.ConnectionString = "mongodb://localhost:27017";
 		options.DatabaseName = "WebSite";
 	})
 	.AddExtension<WebSiteDbContext, ICommentsDbContext>()

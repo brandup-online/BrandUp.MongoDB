@@ -7,6 +7,8 @@ namespace BrandUp.MongoDB
     {
         public static IServiceCollection AddTestMongoDb(this IServiceCollection services)
         {
+            services.AddMongoDb();
+
             return services.AddSingleton<IMongoDbClientFactory, Mongo2GoDbClientFactory>();
         }
     }

@@ -148,7 +148,7 @@ namespace BrandUp.MongoDB
                 throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} not contain {nameof(MongoCollectionAttribute)} attribute.");
 
             var collectionMetadataType = MongoCollectionMetadataType.MakeGenericType(documentType);
-            var collectionMetadata = (IMongoDbCollectionMetadata)Activator.CreateInstance(collectionMetadataType, false);
+            var collectionMetadata = (IMongoDbCollectionMetadata)Activator.CreateInstance(collectionMetadataType, true);
 
             var index = collections.Count;
             collections.Add(collectionMetadata);

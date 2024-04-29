@@ -11,6 +11,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests.Models
     }
 
     [MongoCollection(CollectionName = "Documents")]
+    [BsonKnownTypes(typeof(ArticleDocument), typeof(NewsDocument))]
     public abstract class Document
     {
         [BsonId, BsonRepresentation(BsonType.ObjectId)]

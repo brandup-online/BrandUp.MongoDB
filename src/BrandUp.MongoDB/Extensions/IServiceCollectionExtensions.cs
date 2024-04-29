@@ -6,14 +6,20 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class IServiceCollectionExtensions
     {
-        public static IServiceCollection AddMongoDb(this IServiceCollection services, Action<MongoDbOptions> configure)
+        public static IServiceCollection AddMongoDb(this IServiceCollection services, Action<MongoDbOptions> configure = null)
         {
-            services
+            var optionsBuilder = services
                 .AddOptions<MongoDbOptions>()
-                .Configure(configure)
                 .Validate(options => !string.IsNullOrEmpty(options.ConnectionString), $"Paramenter {nameof(MongoDbOptions.ConnectionString)} is required.");
 
+            if (configure != null)
+                optionsBuilder.Configure(configure);
+
             services.AddSingleton<IMongoDbClientFactory, MongoDbClientFactory>();
+
+            services
+                .AddScoped<MongoDbSession>()
+                .AddTransient<ITransactionFactory>((s) => s.GetRequiredService<MongoDbSession>());
 
             return services;
         }
