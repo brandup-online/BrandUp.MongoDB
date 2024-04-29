@@ -32,9 +32,9 @@ namespace BrandUp.MongoDB.Tests
             Assert.Equal("Test", dbContext.Database.DatabaseNamespace.DatabaseName);
 
             Assert.Collection(dbContext.Collections,
-                (collection) => { Assert.Equal("Documents", collection.CollectionName); Assert.Equal(typeof(Document), collection.DocumentType); },
-                (collection) => { Assert.Equal("Article", collection.CollectionName); Assert.Equal(typeof(ArticleDocument), collection.DocumentType); },
-                (collection) => { Assert.Equal("Tasks", collection.CollectionName); Assert.Equal(typeof(TaskDocument), collection.DocumentType); });
+                (collection) => { Assert.Equal("Documents", collection.Name); Assert.Equal(typeof(Document), collection.DocumentType); },
+                (collection) => { Assert.Equal("Article", collection.Name); Assert.Equal(typeof(ArticleDocument), collection.DocumentType); },
+                (collection) => { Assert.Equal("Tasks", collection.Name); Assert.Equal(typeof(TaskDocument), collection.DocumentType); });
         }
 
         [Fact]

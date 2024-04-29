@@ -1,10 +1,12 @@
 ﻿using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
     public class MongoDbContextOptions
     {
         public string DatabaseName { get; set; }
+        public MongoDatabaseSettings DatabaseSettings { get; set; }
     }
 
     public class MongoDbContextOptionsValidator : IValidateOptions<MongoDbContextOptions>

@@ -60,6 +60,7 @@ namespace BrandUp.MongoDB
                 RegisterCollection(documentType);
             }
         }
+
         void AddDocumentType(Type type)
         {
             if (documentTypes.Contains(type) || type == typeof(object))
@@ -118,6 +119,7 @@ namespace BrandUp.MongoDB
 
             AddDocumentType(type.BaseType);
         }
+
         void RegisterConventions(string name)
         {
             ConventionRegistry.Remove(name);
@@ -151,7 +153,7 @@ namespace BrandUp.MongoDB
             var index = collections.Count;
             collections.Add(collectionMetadata);
             collectionTypes.Add(documentType, index);
-            collectionNames.Add(collectionMetadata.CollectionName.ToLower(), index);
+            collectionNames.Add(collectionMetadata.Name.ToLower(), index);
 
             AddDocumentType(documentType);
 

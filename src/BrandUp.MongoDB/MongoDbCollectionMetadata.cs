@@ -11,7 +11,7 @@ namespace BrandUp.MongoDB
     {
         public IMongoCollection<TDocument> Collection { get; private set; }
 
-        public MongoDbCollectionMetadata()
+        internal MongoDbCollectionMetadata()
         {
             var documentType = DocumentType;
 
@@ -23,24 +23,24 @@ namespace BrandUp.MongoDB
             else
                 collectionName = TrimCollectionNamePrefix(documentType.Name);
 
-            CollectionName = collectionName;
+            Name = collectionName;
         }
 
         #region IMongoDbCollectionContext members
 
-        public string CollectionName { get; }
+        public string Name { get; }
         public Type DocumentType { get; } = typeof(TDocument);
         void IMongoDbCollectionMetadata.Initialize(MongoDbContext dbContext, CancellationToken cancellationToken)
         {
             var collectionNames = dbContext.Database.ListCollectionNames(cancellationToken: cancellationToken).ToList(cancellationToken);
-            if (!collectionNames.Any(name => name.Equals(CollectionName, StringComparison.InvariantCultureIgnoreCase)))
+            if (!collectionNames.Any(name => name.Equals(Name, StringComparison.InvariantCultureIgnoreCase)))
             {
                 var createOptions = new CreateCollectionOptions();
-                dbContext.Database.CreateCollection(CollectionName, createOptions, cancellationToken);
+                dbContext.Database.CreateCollection(Name, createOptions, cancellationToken);
             }
 
             var collectionSettings = new MongoCollectionSettings();
-            Collection = dbContext.Database.GetCollection<TDocument>(CollectionName, collectionSettings);
+            Collection = dbContext.Database.GetCollection<TDocument>(Name, collectionSettings);
         }
 
         #endregion
@@ -57,7 +57,7 @@ namespace BrandUp.MongoDB
 
     public interface IMongoDbCollectionMetadata
     {
-        string CollectionName { get; }
+        string Name { get; }
         Type DocumentType { get; }
         void Initialize(MongoDbContext dbContext, CancellationToken cancellationToken = default);
     }

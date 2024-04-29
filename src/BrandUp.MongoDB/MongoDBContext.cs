@@ -29,7 +29,7 @@ namespace BrandUp.MongoDB
             options = optionsFactory.Create(optionsName);
 
             Client = mongoClientFactory.ResolveClient();
-            Database = Client.GetDatabase(options.DatabaseName, new MongoDatabaseSettings());
+            Database = Client.GetDatabase(options.DatabaseName, options.DatabaseSettings);
 
             var i = 0;
             foreach (var collection in collections)
@@ -38,7 +38,7 @@ namespace BrandUp.MongoDB
 
                 this.collections.Add(collection);
                 collectionTypes.Add(collection.DocumentType, i);
-                collectionNames.Add(collection.CollectionName, i);
+                collectionNames.Add(collection.Name, i);
 
                 i++;
             }
