@@ -18,10 +18,8 @@ namespace BrandUp.MongoDB
         /// <param name="cancellationToken">Токен отмены операции.</param>
         public static async Task<IEnumerable<string>> ApplyIndexes<TDocument>(this IMongoIndexManager<TDocument> indexManager, IEnumerable<CreateIndexModel<TDocument>> indexes, bool recreateIfExists = true, CancellationToken cancellationToken = default)
         {
-            if (indexManager == null)
-                throw new ArgumentNullException(nameof(indexManager));
-            if (indexes == null)
-                throw new ArgumentNullException(nameof(indexes));
+            ArgumentNullException.ThrowIfNull(indexManager);
+            ArgumentNullException.ThrowIfNull(indexes);
 
             var indexesForCreation = new List<CreateIndexModel<TDocument>>();
 
@@ -44,7 +42,7 @@ namespace BrandUp.MongoDB
             if (indexesForCreation.Count > 0)
                 return await indexManager.CreateManyAsync(indexesForCreation, cancellationToken);
             else
-                return Enumerable.Empty<string>();
+                return [];
         }
 
         public static async Task<List<string>> ListNamesAsync<TDocument>(this IMongoIndexManager<TDocument> indexManager, CancellationToken cancellationToken = default)
@@ -54,8 +52,7 @@ namespace BrandUp.MongoDB
 
         public static async Task<bool> HasIndexAsync<TDocument>(this IMongoIndexManager<TDocument> indexManager, string name, CancellationToken cancellationToken = default)
         {
-            if (name == null)
-                throw new InvalidOperationException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             var indexNames = await indexManager.ListNamesAsync(cancellationToken);
             foreach (var indexName in indexNames)
@@ -69,8 +66,7 @@ namespace BrandUp.MongoDB
 
         public static async Task<bool> DropIfExistAsync<TDocument>(this IMongoIndexManager<TDocument> indexManager, string name, DropIndexOptions options = null, CancellationToken cancellationToken = default)
         {
-            if (name == null)
-                throw new InvalidOperationException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (!await HasIndexAsync(indexManager, name, cancellationToken))
                 return false;

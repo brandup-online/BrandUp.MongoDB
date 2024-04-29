@@ -9,9 +9,9 @@ namespace BrandUp.MongoDB
     public abstract class MongoDbContext : IDisposable
     {
         MongoDbContextOptions options;
-        readonly List<IMongoDbCollectionMetadata> collections = new();
-        readonly Dictionary<Type, int> collectionTypes = new();
-        readonly Dictionary<string, int> collectionNames = new();
+        readonly List<IMongoDbCollectionMetadata> collections = [];
+        readonly Dictionary<Type, int> collectionTypes = [];
+        readonly Dictionary<string, int> collectionNames = [];
 
         public IMongoDatabase Database { get; private set; }
         public IEnumerable<IMongoDbCollectionMetadata> Collections => collections;
@@ -44,8 +44,7 @@ namespace BrandUp.MongoDB
         }
         internal bool TryGetCollectionContext(Type documentType, out IMongoDbCollectionMetadata collectionContext)
         {
-            if (documentType == null)
-                throw new ArgumentNullException(nameof(documentType));
+            ArgumentNullException.ThrowIfNull(documentType);
 
             if (!collectionTypes.TryGetValue(documentType, out int index))
             {
@@ -58,8 +57,7 @@ namespace BrandUp.MongoDB
         }
         internal bool TryGetCollectionContext(string collectionName, out IMongoDbCollectionMetadata collectionContext)
         {
-            if (collectionName == null)
-                throw new ArgumentNullException(nameof(collectionName));
+            ArgumentNullException.ThrowIfNull(collectionName);
 
             if (!collectionNames.TryGetValue(collectionName.ToLower(), out int index))
             {
@@ -114,6 +112,8 @@ namespace BrandUp.MongoDB
         public void Dispose()
         {
             Dispose(true);
+
+            GC.SuppressFinalize(this);
         }
 
         #endregion

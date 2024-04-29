@@ -28,10 +28,10 @@ namespace BrandUp.MongoDB
         readonly static Type MongoCollectionType = typeof(IMongoCollection<>);
         readonly static Type MongoCollectionMetadataType = typeof(MongoDbCollectionMetadata<>);
 
-        readonly List<IMongoDbCollectionMetadata> collections = new();
-        readonly Dictionary<Type, int> collectionTypes = new();
-        readonly Dictionary<string, int> collectionNames = new();
-        readonly HashSet<Type> documentTypes = new();
+        readonly List<IMongoDbCollectionMetadata> collections = [];
+        readonly Dictionary<Type, int> collectionTypes = [];
+        readonly Dictionary<string, int> collectionNames = [];
+        readonly HashSet<Type> documentTypes = [];
         TContext dbContext;
 
         public MongoDbContextBuilder(IServiceCollection services)
@@ -130,12 +130,11 @@ namespace BrandUp.MongoDB
 
         public IServiceCollection Services { get; }
         public Type ContextType { get; }
-        public ConventionPack Conventions { get; } = new ConventionPack();
+        public ConventionPack Conventions { get; } = [];
         public IEnumerable<IMongoDbCollectionMetadata> Collections => collections;
         public IMongoDbContextBuilder RegisterCollection(Type documentType)
         {
-            if (documentType == null)
-                throw new ArgumentNullException(nameof(documentType));
+            ArgumentNullException.ThrowIfNull(documentType);
             if (!documentType.IsClass)
                 throw new ArgumentException("Document type require is class.");
 
@@ -168,8 +167,7 @@ namespace BrandUp.MongoDB
         }
         public bool HasCollectionName(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             return collectionNames.ContainsKey(name.ToLower());
         }

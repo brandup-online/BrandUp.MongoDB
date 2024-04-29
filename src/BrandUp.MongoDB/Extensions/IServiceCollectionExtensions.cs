@@ -16,8 +16,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static MongoDbContextBuilder<TContext> AddMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextOptions> configureOptions)
             where TContext : MongoDbContext
         {
-            if (configureOptions == null)
-                throw new ArgumentNullException(nameof(configureOptions));
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             var contextType = typeof(TContext);
 
@@ -37,8 +36,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public static IServiceCollection ConfigureMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextOptions> configureOptions)
             where TContext : MongoDbContext
         {
-            if (configureOptions == null)
-                throw new ArgumentNullException(nameof(configureOptions));
+            ArgumentNullException.ThrowIfNull(configureOptions);
 
             var contextType = typeof(TContext);
 
