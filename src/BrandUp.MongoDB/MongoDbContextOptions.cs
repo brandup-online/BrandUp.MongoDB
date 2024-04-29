@@ -4,7 +4,6 @@ namespace BrandUp.MongoDB
 {
     public class MongoDbContextOptions
     {
-        public string ConnectionString { get; set; } = MongoDbDefaults.LocalConnectionString;
         public string DatabaseName { get; set; }
     }
 

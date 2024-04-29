@@ -19,7 +19,6 @@ namespace BrandUp.MongoDB.Tests
             services
                 .AddMongoDbContext<TestDbContext>(options =>
                 {
-                    options.ConnectionString = MongoDbDefaults.LocalConnectionString;
                     options.DatabaseName = "Test";
                 })
                 .UseCamelCaseElementName()
@@ -50,7 +49,6 @@ namespace BrandUp.MongoDB.Tests
             services
                 .AddMongoDbContext<TestDbContext>(options =>
                 {
-                    options.ConnectionString = MongoDbDefaults.LocalConnectionString;
                     options.DatabaseName = "Test";
                 })
                 .AddExtension<TestDbContext, IWorkerDbContext>();

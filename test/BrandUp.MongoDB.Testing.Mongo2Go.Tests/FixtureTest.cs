@@ -103,7 +103,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
         #region IMongoDbClientFactory members
 
-        IMongoClient IMongoDbClientFactory.ResolveClient(string connectionString)
+        IMongoClient IMongoDbClientFactory.ResolveClient()
         {
             return client;
         }

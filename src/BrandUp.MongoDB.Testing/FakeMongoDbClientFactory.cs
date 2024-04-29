@@ -4,9 +4,9 @@ namespace BrandUp.MongoDB.Testing
 {
     public class FakeMongoDbClientFactory : IMongoDbClientFactory
     {
-        public IMongoClient ResolveClient(string connectionString)
+        public IMongoClient ResolveClient()
         {
-            return new FakeMongoClient(connectionString);
+            return new FakeMongoClient(MongoDbDefaults.LocalConnectionString);
         }
     }
 }

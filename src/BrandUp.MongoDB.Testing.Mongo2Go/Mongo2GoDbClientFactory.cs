@@ -18,7 +18,7 @@ namespace BrandUp.MongoDB.Testing
             client = new MongoClient(runner.ConnectionString);
         }
 
-        public IMongoClient ResolveClient(string connectionString)
+        public IMongoClient ResolveClient()
         {
             return client;
         }

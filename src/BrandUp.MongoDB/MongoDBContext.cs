@@ -13,6 +13,7 @@ namespace BrandUp.MongoDB
         readonly Dictionary<Type, int> collectionTypes = [];
         readonly Dictionary<string, int> collectionNames = [];
 
+        public IMongoClient Client { get; private set; }
         public IMongoDatabase Database { get; private set; }
         public IEnumerable<IMongoDbCollectionMetadata> Collections => collections;
 
@@ -27,8 +28,8 @@ namespace BrandUp.MongoDB
             var optionsName = GetType().FullName;
             options = optionsFactory.Create(optionsName);
 
-            var mongoClient = mongoClientFactory.ResolveClient(options.ConnectionString);
-            Database = mongoClient.GetDatabase(options.DatabaseName, new MongoDatabaseSettings());
+            Client = mongoClientFactory.ResolveClient();
+            Database = Client.GetDatabase(options.DatabaseName, new MongoDatabaseSettings());
 
             var i = 0;
             foreach (var collection in collections)
