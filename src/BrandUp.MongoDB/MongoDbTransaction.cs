@@ -29,7 +29,7 @@ namespace BrandUp.MongoDB
                 await appDocumentSession.Current.CommitTransactionAsync(cancellationToken);
         }
 
-        private void Abort()
+        void Abort()
         {
             if (!isChild && appDocumentSession.Current.IsInTransaction)
                 appDocumentSession.Current.AbortTransaction();
