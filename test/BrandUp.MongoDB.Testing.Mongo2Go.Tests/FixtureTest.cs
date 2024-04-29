@@ -11,19 +11,12 @@ using Xunit;
 
 namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 {
-    public class FixtureTest : IClassFixture<FakeMongoDbInstance>, IAsyncLifetime
+    public class FixtureTest(FakeMongoDbInstance fakeMongoDbInstance) : IClassFixture<FakeMongoDbInstance>, IAsyncLifetime
     {
-        readonly FakeMongoDbInstance fakeMongoDbInstance;
-
-        public FixtureTest(FakeMongoDbInstance fakeMongoDbInstance)
-        {
-            this.fakeMongoDbInstance = fakeMongoDbInstance ?? throw new ArgumentNullException(nameof(fakeMongoDbInstance));
-        }
-
         #region Test methods
 
         [Fact]
-        public async void Test1()
+        public async Task Test1()
         {
             var services = new ServiceCollection();
 
@@ -44,7 +37,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
         }
 
         [Fact]
-        public async void Test2()
+        public async Task Test2()
         {
             var services = new ServiceCollection();
 
