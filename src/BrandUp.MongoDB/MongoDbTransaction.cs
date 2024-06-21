@@ -8,7 +8,7 @@ namespace BrandUp.MongoDB
     {
         readonly MongoDbSession appDocumentSession;
         readonly bool isChild = false;
-        private bool disposedValue;
+        bool isDisposed;
 
         internal MongoDbTransaction(MongoDbSession appDocumentSession)
         {
@@ -39,12 +39,12 @@ namespace BrandUp.MongoDB
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposedValue)
+            if (!isDisposed)
             {
                 if (disposing)
                     Abort();
 
-                disposedValue = true;
+                isDisposed = true;
             }
         }
 
