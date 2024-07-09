@@ -1,20 +1,28 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-	<TargetFramework>net8.0</TargetFramework>
-	<Authors>Dmitry Kovyazin</Authors>
-	<Company>BrandUp.online</Company>
-	<Product>BrandUp.MongoDB</Product>
-	<PackageProjectUrl>https://github.com/brandup-online/BrandUp.MongoDB</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/brandup-online/BrandUp.MongoDB</RepositoryUrl>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<Authors>Dmitry Kovyazin</Authors>
+		<Company>BrandUp.online</Company>
+		<Product>BrandUp.MongoDB</Product>
+		<PackageProjectUrl>https://github.com/brandup-online/BrandUp.MongoDB</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/brandup-online/BrandUp.MongoDB</RepositoryUrl>
+		<PackageIcon>icon.png</PackageIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-	<PackageReference Include="MongoDB.Driver" Version="2.27.0" />
-  </ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\icon.png">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
 
-  <ItemGroup>
-	<ProjectReference Include="..\BrandUp.MongoDB\BrandUp.MongoDB.csproj" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="MongoDB.Driver" Version="2.27.0" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\BrandUp.MongoDB\BrandUp.MongoDB.csproj" />
+	</ItemGroup>
 
 </Project>
