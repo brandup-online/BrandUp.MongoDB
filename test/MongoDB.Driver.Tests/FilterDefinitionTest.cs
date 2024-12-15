@@ -1,5 +1,5 @@
-using MongoDB.Bson.Serialization;
 using System;
+using MongoDB.Bson.Serialization;
 using Xunit;
 
 namespace MongoDB.Driver.Tests
@@ -15,7 +15,7 @@ namespace MongoDB.Driver.Tests
                 .Eq(it => it.Title, "test");
 
             var serializer = BsonSerializer.LookupSerializer<Document>();
-            var bsonDocument = filterDefonition.Render(serializer, BsonSerializer.SerializerRegistry);
+            var bsonDocument = filterDefonition.Render(new RenderArgs<Document>(serializer, BsonSerializer.SerializerRegistry));
 
             Assert.NotNull(bsonDocument);
             Assert.True(bsonDocument.Contains("Title"));
@@ -30,7 +30,7 @@ namespace MongoDB.Driver.Tests
                 .Text("test");
 
             var serializer = BsonSerializer.LookupSerializer<Document>();
-            var bsonDocument = filterDefonition.Render(serializer, BsonSerializer.SerializerRegistry);
+            var bsonDocument = filterDefonition.Render(new RenderArgs<Document>(serializer, BsonSerializer.SerializerRegistry));
 
             Assert.NotNull(bsonDocument);
             Assert.True(bsonDocument.Contains("$text"));

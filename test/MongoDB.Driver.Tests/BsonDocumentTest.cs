@@ -1,5 +1,6 @@
-using MongoDB.Bson;
 using System;
+using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
 using Xunit;
 
 namespace MongoDB.Driver.Tests
@@ -33,6 +34,7 @@ namespace MongoDB.Driver.Tests
 
         public class Document
         {
+            [BsonGuidRepresentation(GuidRepresentation.Standard)]
             public Guid Id { get; set; }
             public string Title { get; set; }
         }

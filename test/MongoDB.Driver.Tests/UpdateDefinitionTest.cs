@@ -1,5 +1,5 @@
-using MongoDB.Bson.Serialization;
 using System;
+using MongoDB.Bson.Serialization;
 using Xunit;
 
 namespace MongoDB.Driver.Tests
@@ -16,7 +16,7 @@ namespace MongoDB.Driver.Tests
                 .Set(it => it.Doc.Title, "test2");
 
             var serializer = BsonSerializer.LookupSerializer<Document>();
-            var bsonDocument = updateDefonition.Render(serializer, BsonSerializer.SerializerRegistry);
+            var bsonDocument = updateDefonition.Render(new RenderArgs<Document>(serializer, BsonSerializer.SerializerRegistry));
 
             Assert.NotNull(bsonDocument);
             Assert.True(bsonDocument.AsBsonDocument.Contains("$set"));

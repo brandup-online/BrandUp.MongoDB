@@ -73,7 +73,7 @@ namespace BrandUp.MongoDB.Testing
         {
             var matchedCount = 0;
             var modifiedCount = 0;
-            var bsobUpdate = update.Render(DocumentSerializer, Settings.SerializerRegistry).AsBsonDocument;
+            var bsobUpdate = update.Render(new RenderArgs<TDocument>(DocumentSerializer, Settings.SerializerRegistry)).AsBsonDocument;
 
             foreach (var docObject in documents)
             {
@@ -368,7 +368,7 @@ namespace BrandUp.MongoDB.Testing
             }
             else
             {
-                var filterDoc = filter.Render(DocumentSerializer, BsonSerializer.SerializerRegistry);
+                var filterDoc = filter.Render(new RenderArgs<TDocument>(DocumentSerializer, BsonSerializer.SerializerRegistry));
                 if (filterDoc.ElementCount > 0)
                     throw new NotSupportedException();
 

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.10.35013.160
+VisualStudioVersion = 17.12.35527.113 d17.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{17DD091D-2C32-45D3-8EB5-1374BB8D8980}"
 EndProject
@@ -23,9 +23,9 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB.Testing.Tes
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MongoDB.Driver.Tests", "test\MongoDB.Driver.Tests\MongoDB.Driver.Tests.csproj", "{17CA235A-09A4-471E-972E-B7065CDC460D}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB.Testing.Mongo2Go", "src\BrandUp.MongoDB.Testing.Mongo2Go\BrandUp.MongoDB.Testing.Mongo2Go.csproj", "{54D5EA59-8E2C-4647-B83A-4B59224CB786}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandUp.MongoDB.Testing.Mongo2Go", "src\BrandUp.MongoDB.Testing.Mongo2Go\BrandUp.MongoDB.Testing.Mongo2Go.csproj", "{54D5EA59-8E2C-4647-B83A-4B59224CB786}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BrandUp.MongoDB.Testing.Mongo2Go.Tests", "test\BrandUp.MongoDB.Testing.Mongo2Go.Tests\BrandUp.MongoDB.Testing.Mongo2Go.Tests.csproj", "{643E432E-5F5E-410B-B4C7-867929A824CC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BrandUp.MongoDB.Testing.Mongo2Go.Tests", "test\BrandUp.MongoDB.Testing.Mongo2Go.Tests\BrandUp.MongoDB.Testing.Mongo2Go.Tests.csproj", "{643E432E-5F5E-410B-B4C7-867929A824CC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

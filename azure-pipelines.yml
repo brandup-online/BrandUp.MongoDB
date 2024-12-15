@@ -19,9 +19,9 @@ variables:
 - name: envName
   value: 'brandup-mongodb'
 - name: version-major
-  value: "7"
+  value: "8"
 - name: version-minor
-  value: "3"
+  value: "0"
 
 name: $(version-major).$(version-minor).$(rev:r)
 
@@ -49,10 +49,10 @@ stages:
       persistCredentials: "true"
 
     - task: UseDotNet@2
-      displayName: 'use dotnet 8.x'
+      displayName: 'use dotnet 9.x'
       inputs:
         packageType: 'sdk'
-        version: '8.x'
+        version: '9.x'
         
     - task: DotNetCoreCLI@2
       displayName: 'dotnet restore'

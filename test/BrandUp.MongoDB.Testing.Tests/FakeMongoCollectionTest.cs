@@ -1,4 +1,5 @@
 using System;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using Xunit;
@@ -145,6 +146,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         public class Document
         {
             [BsonId]
+            [BsonGuidRepresentation(GuidRepresentation.Standard)]
             public Guid Id { get; set; }
             public string Name { get; set; }
         }
