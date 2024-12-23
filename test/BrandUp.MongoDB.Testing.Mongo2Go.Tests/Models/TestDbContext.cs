@@ -11,7 +11,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests.Models
     }
 
     [MongoCollection(CollectionName = "Documents")]
-    [BsonDiscriminator("Base", Required = true, RootClass = true)]
+    [BsonDiscriminator("Base", RootClass = true)]
     [BsonKnownTypes(typeof(ArticleDocument), typeof(NewsDocument))]
     public abstract class Document
     {

@@ -94,6 +94,15 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
                     Assert.Equal("name1", d.Name);
                 });
+
+            // Удаляем метку базового типа
+            var updateResult = await dbContext.Documents.UpdateManyAsync(
+                Builders<Document>.Filter.Empty,
+                Builders<Document>.Update.Pull("_t", "Base"));
+            if (updateResult.ModifiedCount != 2)
+                throw new InvalidOperationException();
+
+            Assert.Equal(2, dbContext.Documents.OfType<Document>().AsQueryable().ToList().Count);
         }
 
         [Fact]
