@@ -85,16 +85,14 @@ namespace BrandUp.MongoDB
             where TDocument : class
         {
             if (!TryGetCollectionContext(out MongoDbCollectionMetadata<TDocument> collectionContext))
-                throw new ArgumentException();
+                throw new ArgumentException($"Not found collection context of document type \"{typeof(TDocument).AssemblyQualifiedName}\" by \"{GetType().AssemblyQualifiedName}\".");
 
             return collectionContext;
         }
         public IMongoCollection<TDocument> GetCollection<TDocument>()
             where TDocument : class
         {
-            if (!TryGetCollectionContext(out MongoDbCollectionMetadata<TDocument> collectionContext))
-                throw new ArgumentException();
-
+            var collectionContext = GetCollectionContext<TDocument>();
             return collectionContext.Collection;
         }
 
