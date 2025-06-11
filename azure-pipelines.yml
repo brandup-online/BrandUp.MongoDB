@@ -110,7 +110,7 @@ stages:
       clean: "true"
       persistCredentials: "true"
 
-    - pwsh: |
+    - powershell: |
           git config --global user.name "AzureDevOps Agent"
           git tag "$(Build.BuildNumber)" --force
           git push origin "$(Build.BuildNumber)" --force
