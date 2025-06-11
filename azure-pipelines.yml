@@ -26,7 +26,8 @@ variables:
 name: $(version-major).$(version-minor).$(rev:r)
 
 pool:
-  vmImage: $(vmImageName)
+  # vmImage: $(vmImageName)
+  name: Test
 
 stages:
 - stage: Build
@@ -35,7 +36,8 @@ stages:
   - job: BuildNet
     displayName: Build
     pool:
-      vmImage: $(vmImageName)
+      #vmImage: $(vmImageName)
+      name: Test
       workspace:
         clean: all
     steps:
