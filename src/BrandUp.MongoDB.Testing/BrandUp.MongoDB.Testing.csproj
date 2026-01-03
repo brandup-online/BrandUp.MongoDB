@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<Authors>Dmitry Kovyazin</Authors>
 		<Company>BrandUp.online</Company>
 		<Product>BrandUp.MongoDB</Product>
@@ -18,7 +18,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="MongoDB.Driver" Version="3.4.0" />
+		<PackageReference Include="MongoDB.Driver" Version="3.5.2" />
 	</ItemGroup>
 
 	<ItemGroup>
