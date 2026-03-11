@@ -31,7 +31,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
             Assert.NotNull(dbContext);
 
-            var countDocuments = await dbContext.Documents.EstimatedDocumentCountAsync();
+            var countDocuments = await dbContext.Documents.EstimatedDocumentCountAsync(cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(0, countDocuments);
         }
@@ -54,7 +54,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
             Assert.NotNull(dbContext);
 
-            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" });
+            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" }, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Collection(dbContext.Documents.AsQueryable(),
                 d =>
@@ -84,8 +84,8 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
             Assert.NotNull(dbContext);
 
-            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name1", Author = "author" });
-            await dbContext.Documents.InsertOneAsync(new NewsDocument { Name = "name2", Date = DateTime.UtcNow });
+            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name1", Author = "author" }, cancellationToken: TestContext.Current.CancellationToken);
+            await dbContext.Documents.InsertOneAsync(new NewsDocument { Name = "name2", Date = DateTime.UtcNow }, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Collection(dbContext.Documents.OfType<ArticleDocument>().AsQueryable(),
                 d =>
@@ -98,7 +98,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             // Удаляем метку базового типа
             var updateResult = await dbContext.Documents.UpdateManyAsync(
                 Builders<Document>.Filter.Empty,
-                Builders<Document>.Update.Pull("_t", "Base"));
+                Builders<Document>.Update.Pull("_t", "Base"), cancellationToken: TestContext.Current.CancellationToken);
             if (updateResult.ModifiedCount != 2)
                 throw new InvalidOperationException();
 
@@ -123,7 +123,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
             Assert.NotNull(dbContext);
 
-            var countDocuments = await dbContext.Documents.EstimatedDocumentCountAsync();
+            var countDocuments = await dbContext.Documents.EstimatedDocumentCountAsync(cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(0, countDocuments);
         }

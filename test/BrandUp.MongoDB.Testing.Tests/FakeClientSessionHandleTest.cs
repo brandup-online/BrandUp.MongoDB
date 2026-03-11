@@ -14,7 +14,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void CommitTransaction()
         {
-            using (var session = client.StartSession())
+            using (var session = client.StartSession(cancellationToken: TestContext.Current.CancellationToken))
             {
                 Assert.False(session.IsInTransaction);
 
@@ -22,7 +22,7 @@ namespace BrandUp.MongoDB.Testing.Tests
 
                 Assert.True(session.IsInTransaction);
 
-                session.CommitTransaction();
+                session.CommitTransaction(TestContext.Current.CancellationToken);
 
                 Assert.False(session.IsInTransaction);
             }
@@ -31,7 +31,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void AbortTransaction()
         {
-            using (var session = client.StartSession())
+            using (var session = client.StartSession(cancellationToken: TestContext.Current.CancellationToken))
             {
                 Assert.False(session.IsInTransaction);
 
@@ -39,7 +39,7 @@ namespace BrandUp.MongoDB.Testing.Tests
 
                 Assert.True(session.IsInTransaction);
 
-                session.AbortTransaction();
+                session.AbortTransaction(TestContext.Current.CancellationToken);
 
                 Assert.False(session.IsInTransaction);
             }

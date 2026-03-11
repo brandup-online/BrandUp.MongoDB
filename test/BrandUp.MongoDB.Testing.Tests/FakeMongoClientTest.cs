@@ -26,7 +26,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void StartSession()
         {
-            var session = client.StartSession();
+            var session = client.StartSession(cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.NotNull(session);
             Assert.Equal(client, session.Client);
@@ -35,7 +35,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public async Task StartSessionAsync()
         {
-            var session = await client.StartSessionAsync();
+            var session = await client.StartSessionAsync(cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.NotNull(session);
             Assert.Equal(client, session.Client);

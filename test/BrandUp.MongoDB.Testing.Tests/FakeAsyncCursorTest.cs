@@ -1,5 +1,5 @@
-﻿using MongoDB.Driver;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using MongoDB.Driver;
 using Xunit;
 
 namespace BrandUp.MongoDB.Testing.Tests
@@ -11,7 +11,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         {
             var cursor = new FakeAsyncCursor<string>(new List<string> { "test1", "test2" });
 
-            var items = cursor.ToList();
+            var items = cursor.ToList(TestContext.Current.CancellationToken);
             Assert.Equal(2, items.Count);
         }
     }

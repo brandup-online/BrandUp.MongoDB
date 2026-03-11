@@ -31,7 +31,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             using var scope = services.BuildServiceProvider();
             var dbContext = scope.GetService<TestDbContext>();
 
-            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" });
+            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" }, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Single(dbContext.Documents.AsQueryable());
         }
@@ -52,7 +52,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             using var scope = services.BuildServiceProvider();
             var dbContext = scope.GetService<TestDbContext>();
 
-            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" });
+            await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" }, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Single(dbContext.Documents.AsQueryable());
         }
@@ -61,14 +61,14 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
         #region IAsyncLifetime members
 
-        Task IAsyncLifetime.InitializeAsync()
+        ValueTask IAsyncLifetime.InitializeAsync()
         {
-            return Task.CompletedTask;
+            return ValueTask.CompletedTask;
         }
 
-        Task IAsyncLifetime.DisposeAsync()
+        async ValueTask IAsyncDisposable.DisposeAsync()
         {
-            return fakeMongoDbInstance.CleanUpAsync();
+            await fakeMongoDbInstance.CleanUpAsync();
         }
 
         #endregion
@@ -84,7 +84,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
         #region IAsyncLifetime members
 
-        async Task IAsyncLifetime.InitializeAsync()
+        async ValueTask IAsyncLifetime.InitializeAsync()
         {
             runner = MongoDbRunner.Start(singleNodeReplSet: true);
             client = new MongoClient(runner.ConnectionString);
@@ -92,11 +92,11 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             systemDatabaseNames = await (await client.ListDatabaseNamesAsync()).ToListAsync();
         }
 
-        Task IAsyncLifetime.DisposeAsync()
+        async ValueTask IAsyncDisposable.DisposeAsync()
         {
             runner?.Dispose();
 
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
         #endregion

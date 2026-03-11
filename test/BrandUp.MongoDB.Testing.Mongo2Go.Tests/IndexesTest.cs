@@ -34,12 +34,12 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
         #region IAsyncLifetime members
 
-        Task IAsyncLifetime.InitializeAsync()
+        async ValueTask IAsyncLifetime.InitializeAsync()
         {
-            return Task.CompletedTask;
+            await Task.CompletedTask;
         }
 
-        async Task IAsyncLifetime.DisposeAsync()
+        async ValueTask IAsyncDisposable.DisposeAsync()
         {
             await serviceProvider.DisposeAsync();
 
@@ -55,16 +55,16 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
         {
             var indexes = new List<CreateIndexModel<Document>>
             {
-                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
+                new(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
             };
 
-            var result = await dbContext.Documents.Indexes.ApplyIndexes(indexes, true);
+            var result = await dbContext.Documents.Indexes.ApplyIndexes(indexes, true, TestContext.Current.CancellationToken);
             Assert.Collection(result, name => Assert.Equal("Name", name));
 
-            result = await dbContext.Documents.Indexes.ApplyIndexes(indexes, true);
+            result = await dbContext.Documents.Indexes.ApplyIndexes(indexes, true, TestContext.Current.CancellationToken);
             Assert.Collection(result, name => Assert.Equal("Name", name));
 
-            result = await dbContext.Documents.Indexes.ApplyIndexes(indexes, false);
+            result = await dbContext.Documents.Indexes.ApplyIndexes(indexes, false, TestContext.Current.CancellationToken);
             Assert.Empty(result);
         }
 
@@ -73,16 +73,16 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
         {
             var indexes = new List<CreateIndexModel<Document>>
             {
-                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
+                new(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
             };
 
-            var names = await dbContext.Documents.Indexes.ListNamesAsync();
+            var names = await dbContext.Documents.Indexes.ListNamesAsync(TestContext.Current.CancellationToken);
             Assert.Collection(names,
                 name => Assert.Equal("_id_", name));
 
-            await dbContext.Documents.Indexes.ApplyIndexes(indexes, true);
+            await dbContext.Documents.Indexes.ApplyIndexes(indexes, true, TestContext.Current.CancellationToken);
 
-            names = await dbContext.Documents.Indexes.ListNamesAsync();
+            names = await dbContext.Documents.Indexes.ListNamesAsync(TestContext.Current.CancellationToken);
             Assert.Collection(names,
                 name => Assert.Equal("_id_", name),
                 name => Assert.Equal("Name", name));
@@ -93,18 +93,18 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
         {
             var indexes = new List<CreateIndexModel<Document>>
             {
-                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
+                new(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
             };
 
-            var result = await dbContext.Documents.Indexes.HasIndexAsync("Name");
+            var result = await dbContext.Documents.Indexes.HasIndexAsync("Name", TestContext.Current.CancellationToken);
             Assert.False(result);
 
-            await dbContext.Documents.Indexes.ApplyIndexes(indexes, true);
+            await dbContext.Documents.Indexes.ApplyIndexes(indexes, true, TestContext.Current.CancellationToken);
 
-            result = await dbContext.Documents.Indexes.HasIndexAsync("Name");
+            result = await dbContext.Documents.Indexes.HasIndexAsync("Name", TestContext.Current.CancellationToken);
             Assert.True(result);
 
-            result = await dbContext.Documents.Indexes.HasIndexAsync("name");
+            result = await dbContext.Documents.Indexes.HasIndexAsync("name", TestContext.Current.CancellationToken);
             Assert.True(result);
         }
 
@@ -113,18 +113,18 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
         {
             var indexes = new List<CreateIndexModel<Document>>
             {
-                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
+                new(Builders<Document>.IndexKeys.Ascending(it => it.Name), new CreateIndexOptions{ Name = "Name", Unique = true, Background = true })
             };
 
-            var result = await dbContext.Documents.Indexes.DropIfExistAsync("Name");
+            var result = await dbContext.Documents.Indexes.DropIfExistAsync("Name", cancellationToken: TestContext.Current.CancellationToken);
             Assert.False(result);
 
-            await dbContext.Documents.Indexes.ApplyIndexes(indexes, true);
+            await dbContext.Documents.Indexes.ApplyIndexes(indexes, true, TestContext.Current.CancellationToken);
 
-            result = await dbContext.Documents.Indexes.DropIfExistAsync("Name");
+            result = await dbContext.Documents.Indexes.DropIfExistAsync("Name", cancellationToken: TestContext.Current.CancellationToken);
             Assert.True(result);
 
-            result = await dbContext.Documents.Indexes.DropIfExistAsync("name");
+            result = await dbContext.Documents.Indexes.DropIfExistAsync("name", cancellationToken: TestContext.Current.CancellationToken);
             Assert.False(result);
         }
 

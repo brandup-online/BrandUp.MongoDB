@@ -19,9 +19,9 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void CreateOne()
         {
-            var name = collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)));
+            var name = collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)), cancellationToken: TestContext.Current.CancellationToken);
 
-            var indexes = collection.Indexes.List().ToList();
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
             Assert.Single(indexes);
             Assert.Equal("index0", name);
         }
@@ -29,37 +29,37 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void CreateMany()
         {
-            var count = collection.Indexes.CreateMany(new CreateIndexModel<Document>[] {
+            var count = collection.Indexes.CreateMany([
                 new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)),
                 new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Header))
-            });
+            ], TestContext.Current.CancellationToken);
 
-            var indexes = collection.Indexes.List().ToList();
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
             Assert.Equal(2, indexes.Count);
         }
 
         [Fact]
         public void DropAll()
         {
-            collection.Indexes.CreateMany(new CreateIndexModel<Document>[] {
+            collection.Indexes.CreateMany([
                 new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)),
                 new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Header))
-            });
+            ], TestContext.Current.CancellationToken);
 
-            collection.Indexes.DropAll();
+            collection.Indexes.DropAll(TestContext.Current.CancellationToken);
 
-            var indexes = collection.Indexes.List().ToList();
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
             Assert.Empty(indexes);
         }
 
         [Fact]
         public void DropOne()
         {
-            var name = collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)));
+            var name = collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)), cancellationToken: TestContext.Current.CancellationToken);
 
-            collection.Indexes.DropOne(name);
+            collection.Indexes.DropOne(name, TestContext.Current.CancellationToken);
 
-            var indexes = collection.Indexes.List().ToList();
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
             Assert.Empty(indexes);
         }
 

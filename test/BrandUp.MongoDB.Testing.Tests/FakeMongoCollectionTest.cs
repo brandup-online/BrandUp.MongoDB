@@ -20,7 +20,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void CountDocuments()
         {
-            var count = collection.CountDocuments(it => it.Name != "test");
+            var count = collection.CountDocuments(it => it.Name != "test", cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(0, count);
         }
@@ -28,7 +28,7 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void CountDocuments_Empty()
         {
-            var count = collection.CountDocuments(Builders<Document>.Filter.Empty);
+            var count = collection.CountDocuments(Builders<Document>.Filter.Empty, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(0, count);
         }
@@ -36,23 +36,23 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void InsertOne()
         {
-            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" }, cancellationToken: TestContext.Current.CancellationToken);
 
-            Assert.Equal(1, collection.EstimatedDocumentCount());
+            Assert.Equal(1, collection.EstimatedDocumentCount(cancellationToken: TestContext.Current.CancellationToken));
         }
 
         [Fact]
         public void UpdateOne()
         {
             var doc = new Document { Id = Guid.NewGuid(), Name = "test" };
-            collection.InsertOne(doc);
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
 
-            var updateResult = collection.UpdateOne(it => it.Name == "test", Builders<Document>.Update.Set(it => it.Name, "test2"));
+            var updateResult = collection.UpdateOne(it => it.Name == "test", Builders<Document>.Update.Set(it => it.Name, "test2"), cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, updateResult.MatchedCount);
             Assert.Equal(1, updateResult.ModifiedCount);
 
-            var updatedDoc = collection.Find(it => it.Name == "test2").FirstOrDefault();
+            var updatedDoc = collection.Find(it => it.Name == "test2").FirstOrDefault(TestContext.Current.CancellationToken);
             Assert.NotNull(updatedDoc);
             Assert.Equal(doc.Id, updatedDoc.Id);
             Assert.Equal("test2", updatedDoc.Name);
@@ -61,15 +61,15 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void UpdateMany()
         {
-            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
-            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" }, cancellationToken: TestContext.Current.CancellationToken);
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" }, cancellationToken: TestContext.Current.CancellationToken);
 
-            var updateResult = collection.UpdateMany(it => it.Name == "test", Builders<Document>.Update.Set(it => it.Name, "test2"));
+            var updateResult = collection.UpdateMany(it => it.Name == "test", Builders<Document>.Update.Set(it => it.Name, "test2"), cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(2, updateResult.MatchedCount);
             Assert.Equal(2, updateResult.ModifiedCount);
 
-            foreach (var updatedDoc in collection.Find(it => it.Name == "test2").ToList())
+            foreach (var updatedDoc in collection.Find(it => it.Name == "test2").ToList(TestContext.Current.CancellationToken))
                 Assert.Equal("test2", updatedDoc.Name);
         }
 
@@ -77,15 +77,15 @@ namespace BrandUp.MongoDB.Testing.Tests
         public void ReplaceOne()
         {
             var doc = new Document { Id = Guid.NewGuid(), Name = "test" };
-            collection.InsertOne(doc);
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
 
-            var result = collection.ReplaceOne(it => it.Id == doc.Id, new Document { Id = doc.Id, Name = "test2" });
+            var result = collection.ReplaceOne(it => it.Id == doc.Id, new Document { Id = doc.Id, Name = "test2" }, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, result.MatchedCount);
             Assert.Equal(1, result.ModifiedCount);
-            Assert.Equal(1, collection.EstimatedDocumentCount());
+            Assert.Equal(1, collection.EstimatedDocumentCount(cancellationToken: TestContext.Current.CancellationToken));
 
-            var replacedDoc = collection.Find(it => it.Name == "test2").FirstOrDefault();
+            var replacedDoc = collection.Find(it => it.Name == "test2").FirstOrDefault(TestContext.Current.CancellationToken);
             Assert.NotNull(replacedDoc);
             Assert.Equal(doc.Id, replacedDoc.Id);
             Assert.Equal("test2", replacedDoc.Name);
@@ -95,30 +95,30 @@ namespace BrandUp.MongoDB.Testing.Tests
         public void DeleteOne()
         {
             var doc = new Document { Id = Guid.NewGuid(), Name = "test" };
-            collection.InsertOne(doc);
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
 
-            var result = collection.DeleteOne(it => it.Id == doc.Id);
+            var result = collection.DeleteOne(it => it.Id == doc.Id, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(1, result.DeletedCount);
-            Assert.Equal(0, collection.EstimatedDocumentCount());
+            Assert.Equal(0, collection.EstimatedDocumentCount(cancellationToken: TestContext.Current.CancellationToken));
         }
 
         [Fact]
         public void DeleteMany()
         {
-            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
-            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" }, cancellationToken: TestContext.Current.CancellationToken);
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" }, cancellationToken: TestContext.Current.CancellationToken);
 
-            var result = collection.DeleteMany(it => it.Name == "test");
+            var result = collection.DeleteMany(it => it.Name == "test", cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Equal(2, result.DeletedCount);
-            Assert.Equal(0, collection.EstimatedDocumentCount());
+            Assert.Equal(0, collection.EstimatedDocumentCount(cancellationToken: TestContext.Current.CancellationToken));
         }
 
         [Fact]
         public void FindSync_not_matched()
         {
-            var result = collection.FindSync(it => it.Name == "test").ToList();
+            var result = collection.FindSync(it => it.Name == "test", cancellationToken: TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
 
             Assert.Empty(result);
         }
@@ -126,9 +126,9 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void FindSync_matched()
         {
-            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" }, cancellationToken: TestContext.Current.CancellationToken);
 
-            var result = collection.FindSync(it => it.Name == "test").ToList();
+            var result = collection.FindSync(it => it.Name == "test", cancellationToken: TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
 
             Assert.Single(result);
         }
@@ -136,9 +136,9 @@ namespace BrandUp.MongoDB.Testing.Tests
         [Fact]
         public void FindSync_empty_filter()
         {
-            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" });
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "test" }, cancellationToken: TestContext.Current.CancellationToken);
 
-            var result = collection.FindSync(Builders<Document>.Filter.Empty).ToList();
+            var result = collection.FindSync(Builders<Document>.Filter.Empty, cancellationToken: TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
 
             Assert.Single(result);
         }
