@@ -43,6 +43,7 @@ namespace BrandUp.MongoDB
                 i++;
             }
         }
+
         internal bool TryGetCollectionContext(Type documentType, out IMongoDbCollectionMetadata collectionContext)
         {
             ArgumentNullException.ThrowIfNull(documentType);
@@ -56,6 +57,7 @@ namespace BrandUp.MongoDB
             collectionContext = collections[index];
             return true;
         }
+
         internal bool TryGetCollectionContext(string collectionName, out IMongoDbCollectionMetadata collectionContext)
         {
             ArgumentNullException.ThrowIfNull(collectionName);
@@ -69,6 +71,7 @@ namespace BrandUp.MongoDB
             collectionContext = collections[index];
             return true;
         }
+
         public bool TryGetCollectionContext<TDocument>(out MongoDbCollectionMetadata<TDocument> collectionContext)
             where TDocument : class
         {
@@ -81,6 +84,7 @@ namespace BrandUp.MongoDB
             collectionContext = (MongoDbCollectionMetadata<TDocument>)collectionMetadata2;
             return true;
         }
+
         public MongoDbCollectionMetadata<TDocument> GetCollectionContext<TDocument>()
             where TDocument : class
         {
@@ -89,6 +93,7 @@ namespace BrandUp.MongoDB
 
             return collectionContext;
         }
+
         public IMongoCollection<TDocument> GetCollection<TDocument>()
             where TDocument : class
         {

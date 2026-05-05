@@ -49,8 +49,15 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             var dbContext = scope1.ServiceProvider.GetService<TestDbContext>();
             var transactionFactory1 = scope1.ServiceProvider.GetService<ITransactionFactory>();
             var dbSession1 = scope1.ServiceProvider.GetService<MongoDbSession>();
+            var clientSessionHandle1 = scope1.ServiceProvider.GetService<IClientSessionHandle>();
+            Assert.NotNull(clientSessionHandle1);
+            Assert.Equal(clientSessionHandle1, dbSession1.Current);
+
             var transactionFactory2 = scope2.ServiceProvider.GetService<ITransactionFactory>();
             var dbSession2 = scope2.ServiceProvider.GetService<MongoDbSession>();
+            var clientSessionHandle2 = scope2.ServiceProvider.GetService<IClientSessionHandle>();
+            Assert.NotNull(clientSessionHandle2);
+            Assert.Equal(clientSessionHandle2, dbSession2.Current);
 
             using var transaction1 = await dbSession1.BeginAsync(TestContext.Current.CancellationToken);
             await dbContext.Documents.InsertOneAsync(dbSession1.Current, new ArticleDocument { Name = "Test", Author = "test" }, cancellationToken: TestContext.Current.CancellationToken);

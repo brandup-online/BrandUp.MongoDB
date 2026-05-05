@@ -12,13 +12,11 @@ namespace BrandUp.MongoDB
 
         internal MongoDbTransaction(MongoDbSession appDocumentSession)
         {
-            this.appDocumentSession = appDocumentSession ?? throw new ArgumentNullException(nameof(appDocumentSession));
+            this.appDocumentSession = appDocumentSession;
         }
 
         internal MongoDbTransaction(MongoDbTransaction ownerTransaction)
         {
-            ArgumentNullException.ThrowIfNull(ownerTransaction);
-
             appDocumentSession = ownerTransaction.appDocumentSession;
             isChild = true;
         }

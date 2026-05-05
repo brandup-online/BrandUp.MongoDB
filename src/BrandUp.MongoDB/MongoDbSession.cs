@@ -27,26 +27,21 @@ namespace BrandUp.MongoDB
             });
         }
 
-        public Task<ITransaction> BeginAsync(CancellationToken cancellationToken = default)
+        public async Task<ITransaction> BeginAsync(CancellationToken cancellationToken = default)
         {
             if (!clientSession.IsInTransaction)
             {
                 clientSession.StartTransaction();
-                transaction = new MongoDbTransaction(this);
-
-                return Task.FromResult<ITransaction>(transaction);
+                return transaction = new MongoDbTransaction(this); ;
             }
 
-            return Task.FromResult<ITransaction>(new MongoDbTransaction(transaction));
+            return new MongoDbTransaction(transaction);
         }
 
         public void Dispose()
         {
-            if (transaction != null)
-            {
-                transaction.Dispose();
-                transaction = null;
-            }
+            transaction?.Dispose();
+            transaction = null;
 
             clientSession.Dispose();
 

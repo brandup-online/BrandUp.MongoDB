@@ -19,7 +19,8 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services
                 .AddScoped<MongoDbSession>()
-                .AddTransient<ITransactionFactory>((s) => s.GetRequiredService<MongoDbSession>());
+                .AddTransient<ITransactionFactory>((s) => s.GetRequiredService<MongoDbSession>())
+                .AddTransient((s) => s.GetRequiredService<MongoDbSession>().Current);
 
             return services;
         }
