@@ -38,6 +38,35 @@ namespace BrandUp.MongoDB.Tests
         }
 
         [Fact]
+        public void MultiParameterConstructor_AllParametersInjected()
+        {
+            // Regression: MongoDbContextBuilder.Build had a duplicate i++ that
+            // skipped every second constructor argument when resolving services.
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton<TestServiceA>()
+                .AddSingleton<TestServiceB>()
+                .AddSingleton<TestServiceC>()
+                .AddFakeMongoDb();
+
+            services.AddMongoDbContext<MultiCtorDbContext>(options =>
+            {
+                options.DatabaseName = "Test";
+            });
+
+            using var scope = services.BuildServiceProvider();
+            var dbContext = scope.GetRequiredService<MultiCtorDbContext>();
+
+            Assert.NotNull(dbContext.A);
+            Assert.NotNull(dbContext.B);
+            Assert.NotNull(dbContext.C);
+            Assert.Same(scope.GetRequiredService<TestServiceA>(), dbContext.A);
+            Assert.Same(scope.GetRequiredService<TestServiceB>(), dbContext.B);
+            Assert.Same(scope.GetRequiredService<TestServiceC>(), dbContext.C);
+        }
+
+        [Fact]
         public void ContextExension()
         {
             var services = new ServiceCollection();

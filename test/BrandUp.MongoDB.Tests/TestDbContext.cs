@@ -22,6 +22,26 @@ namespace BrandUp.MongoDB.Tests
 
     public class TestService { }
 
+    public class TestServiceA { }
+    public class TestServiceB { }
+    public class TestServiceC { }
+
+    public class MultiCtorDbContext : MongoDbContext
+    {
+        public TestServiceA A { get; }
+        public TestServiceB B { get; }
+        public TestServiceC C { get; }
+
+        public MultiCtorDbContext(TestServiceA a, TestServiceB b, TestServiceC c)
+        {
+            A = a ?? throw new System.ArgumentNullException(nameof(a));
+            B = b ?? throw new System.ArgumentNullException(nameof(b));
+            C = c ?? throw new System.ArgumentNullException(nameof(c));
+        }
+
+        public IMongoCollection<TaskDocument> Tasks => GetCollection<TaskDocument>();
+    }
+
     public interface IWorkerDbContext
     {
         IMongoCollection<TaskDocument> Tasks { get; }

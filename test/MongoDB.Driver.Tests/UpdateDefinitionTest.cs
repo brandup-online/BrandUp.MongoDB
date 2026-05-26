@@ -13,7 +13,7 @@ namespace MongoDB.Driver.Tests
 
             var updateDefonition = Builders<Document>.Update
                 .Set(it => it.Title, "test")
-                .Set(it => it.Doc.Title, "test2");
+                .Set(it => it.Doc!.Title, "test2");
 
             var serializer = BsonSerializer.LookupSerializer<Document>();
             var bsonDocument = updateDefonition.Render(new RenderArgs<Document>(serializer, BsonSerializer.SerializerRegistry));
