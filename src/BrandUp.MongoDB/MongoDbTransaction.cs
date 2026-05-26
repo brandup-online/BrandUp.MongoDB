@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -6,57 +6,80 @@ namespace BrandUp.MongoDB
 {
     public class MongoDbTransaction : ITransaction
     {
-        readonly MongoDbSession appDocumentSession;
-        readonly bool isChild = false;
+        readonly MongoDbSession session;
+        readonly bool isChild;
         bool isDisposed;
 
-        internal MongoDbTransaction(MongoDbSession appDocumentSession)
+        internal MongoDbTransaction(MongoDbSession session)
         {
-            this.appDocumentSession = appDocumentSession;
+            this.session = session;
         }
 
         internal MongoDbTransaction(MongoDbTransaction ownerTransaction)
         {
-            appDocumentSession = ownerTransaction.appDocumentSession;
+            session = ownerTransaction.session;
             isChild = true;
         }
 
-        public async Task CommitAsync(CancellationToken cancellationToken = default)
+        public Task CommitAsync(CancellationToken cancellationToken = default)
         {
-            if (!isChild)
-                await appDocumentSession.Current.CommitTransactionAsync(cancellationToken);
+            return isChild
+                ? Task.CompletedTask
+                : session.Current.CommitTransactionAsync(cancellationToken);
         }
 
-        void Abort()
+        Task AbortAsync(CancellationToken cancellationToken = default)
         {
-            if (!isChild && appDocumentSession.Current.IsInTransaction)
-                appDocumentSession.Current.AbortTransaction();
+            return isChild || !session.Current.IsInTransaction
+                ? Task.CompletedTask
+                : session.Current.AbortTransactionAsync(cancellationToken);
         }
 
-        #region IDisposable members
+        void AbortSync()
+        {
+            if (!isChild && session.Current.IsInTransaction)
+                session.Current.AbortTransaction();
+        }
+
+        #region IDisposable / IAsyncDisposable members
 
         protected virtual void Dispose(bool disposing)
         {
-            if (!isDisposed)
-            {
-                if (disposing)
-                    Abort();
+            if (isDisposed)
+                return;
 
-                isDisposed = true;
-            }
+            if (disposing)
+                AbortSync();
+
+            isDisposed = true;
+        }
+
+        protected virtual async ValueTask DisposeAsyncCore()
+        {
+            if (isDisposed)
+                return;
+
+            await AbortAsync().ConfigureAwait(false);
+            isDisposed = true;
         }
 
         public void Dispose()
         {
             Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
+        public async ValueTask DisposeAsync()
+        {
+            await DisposeAsyncCore().ConfigureAwait(false);
+            Dispose(disposing: false);
             GC.SuppressFinalize(this);
         }
 
         #endregion
     }
 
-    public interface ITransaction : IDisposable
+    public interface ITransaction : IDisposable, IAsyncDisposable
     {
         Task CommitAsync(CancellationToken cancellationToken = default);
     }

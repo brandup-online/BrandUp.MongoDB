@@ -1,15 +1,15 @@
-﻿using System;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
-    public class MongoDbSession : ITransactionFactory, IDisposable
+    public class MongoDbSession : ITransactionFactory, IDisposable, IAsyncDisposable
     {
         readonly IMongoClient client;
         readonly IClientSessionHandle clientSession;
-        MongoDbTransaction transaction;
+        MongoDbTransaction? transaction;
 
         public IClientSessionHandle Current => clientSession;
 
@@ -27,21 +27,38 @@ namespace BrandUp.MongoDB
             });
         }
 
-        public async Task<ITransaction> BeginAsync(CancellationToken cancellationToken = default)
+        public Task<ITransaction> BeginAsync(CancellationToken cancellationToken = default)
         {
-            if (!clientSession.IsInTransaction)
+            if (clientSession.IsInTransaction)
             {
-                clientSession.StartTransaction();
-                return transaction = new MongoDbTransaction(this); ;
+                if (transaction == null)
+                    throw new InvalidOperationException("Session is in a transaction that was not started through this MongoDbSession.");
+
+                return Task.FromResult<ITransaction>(new MongoDbTransaction(transaction));
             }
 
-            return new MongoDbTransaction(transaction);
+            clientSession.StartTransaction();
+            transaction = new MongoDbTransaction(this);
+            return Task.FromResult<ITransaction>(transaction);
         }
 
         public void Dispose()
         {
             transaction?.Dispose();
             transaction = null;
+
+            clientSession.Dispose();
+
+            GC.SuppressFinalize(this);
+        }
+
+        public async ValueTask DisposeAsync()
+        {
+            if (transaction != null)
+            {
+                await transaction.DisposeAsync().ConfigureAwait(false);
+                transaction = null;
+            }
 
             clientSession.Dispose();
 
