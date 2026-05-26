@@ -10,12 +10,12 @@ namespace BrandUp.MongoDB
     public static class IMongoCollectionExtensions
     {
         /// <summary>
-        /// Создание индексов в коллекции.
+        /// Creates indexes on a collection, optionally recreating those that already exist.
         /// </summary>
-        /// <param name="collection">Коллекция документов.</param>
-        /// <param name="indexes">Перечисление индексов, которые нужно создать.</param>
-        /// <param name="recreateIfExists">Нужно ли пересоздавать индексы, которые уже существуют.</param>
-        /// <param name="cancellationToken">Токен отмены операции.</param>
+        /// <param name="indexManager">The collection's index manager.</param>
+        /// <param name="indexes">Indexes to create.</param>
+        /// <param name="recreateIfExists">Whether to drop and recreate indexes that already exist with the same name.</param>
+        /// <param name="cancellationToken">Cancellation token.</param>
         public static async Task<IEnumerable<string>> ApplyIndexes<TDocument>(this IMongoIndexManager<TDocument> indexManager, IEnumerable<CreateIndexModel<TDocument>> indexes, bool recreateIfExists = true, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(indexManager);
