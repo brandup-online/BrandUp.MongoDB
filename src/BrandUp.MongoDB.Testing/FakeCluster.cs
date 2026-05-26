@@ -12,12 +12,11 @@ namespace BrandUp.MongoDB.Testing
         public ClusterDescription Description => throw new NotImplementedException();
         public ClusterSettings Settings => throw new NotImplementedException();
 
-        public event EventHandler<ClusterDescriptionChangedEventArgs> DescriptionChanged;
+        public event EventHandler<ClusterDescriptionChangedEventArgs>? DescriptionChanged;
 
         protected void OnDescriptionChanged(ClusterDescriptionChangedEventArgs e)
         {
-            if (DescriptionChanged != null)
-                DescriptionChanged(this, e);
+            DescriptionChanged?.Invoke(this, e);
         }
 
         public ICoreServerSession AcquireServerSession()
@@ -33,7 +32,7 @@ namespace BrandUp.MongoDB.Testing
         {
         }
 
-        public ICoreSessionHandle StartSession(CoreSessionOptions options = null)
+        public ICoreSessionHandle StartSession(CoreSessionOptions? options = null)
         {
             throw new NotImplementedException();
         }

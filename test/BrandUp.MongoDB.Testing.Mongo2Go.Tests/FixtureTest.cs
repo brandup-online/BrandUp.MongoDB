@@ -29,7 +29,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
                 });
 
             using var scope = services.BuildServiceProvider();
-            var dbContext = scope.GetService<TestDbContext>();
+            var dbContext = scope.GetRequiredService<TestDbContext>();
 
             await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" }, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -50,7 +50,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
                 });
 
             using var scope = services.BuildServiceProvider();
-            var dbContext = scope.GetService<TestDbContext>();
+            var dbContext = scope.GetRequiredService<TestDbContext>();
 
             await dbContext.Documents.InsertOneAsync(new ArticleDocument { Name = "name", Author = "author" }, cancellationToken: TestContext.Current.CancellationToken);
 
@@ -76,9 +76,9 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 
     public class FakeMongoDbInstance : IMongoDbClientFactory, IAsyncLifetime
     {
-        MongoDbRunner runner;
-        MongoClient client;
-        List<string> systemDatabaseNames;
+        MongoDbRunner runner = null!;
+        MongoClient client = null!;
+        List<string> systemDatabaseNames = null!;
 
         public MongoClient Client => client;
 

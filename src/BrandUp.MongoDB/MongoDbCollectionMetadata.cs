@@ -9,7 +9,7 @@ namespace BrandUp.MongoDB
     public class MongoDbCollectionMetadata<TDocument> : IMongoDbCollectionMetadata
         where TDocument : class
     {
-        public IMongoCollection<TDocument> Collection { get; private set; }
+        public IMongoCollection<TDocument> Collection { get; private set; } = null!;
 
         internal MongoDbCollectionMetadata()
         {

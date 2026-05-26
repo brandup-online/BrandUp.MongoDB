@@ -9,7 +9,7 @@ namespace BrandUp.MongoDB
             where TContext : MongoDbContext, TExtension
             where TExtension : class
         {
-            builder.Services.AddTransient<TExtension>(s => s.GetService<TContext>());
+            builder.Services.AddTransient<TExtension>(s => s.GetRequiredService<TContext>());
 
             return builder;
         }

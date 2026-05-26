@@ -9,7 +9,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
 {
     public class TransactionTest : IAsyncLifetime
     {
-        ServiceProvider serviceProvider;
+        ServiceProvider serviceProvider = null!;
 
         #region IAsyncLifetime members
 
@@ -46,16 +46,16 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             await using var scope1 = serviceProvider.CreateAsyncScope();
             await using var scope2 = serviceProvider.CreateAsyncScope();
 
-            var dbContext = scope1.ServiceProvider.GetService<TestDbContext>();
-            var transactionFactory1 = scope1.ServiceProvider.GetService<ITransactionFactory>();
-            var dbSession1 = scope1.ServiceProvider.GetService<MongoDbSession>();
-            var clientSessionHandle1 = scope1.ServiceProvider.GetService<IClientSessionHandle>();
+            var dbContext = scope1.ServiceProvider.GetRequiredService<TestDbContext>();
+            var transactionFactory1 = scope1.ServiceProvider.GetRequiredService<ITransactionFactory>();
+            var dbSession1 = scope1.ServiceProvider.GetRequiredService<MongoDbSession>();
+            var clientSessionHandle1 = scope1.ServiceProvider.GetRequiredService<IClientSessionHandle>();
             Assert.NotNull(clientSessionHandle1);
             Assert.Equal(clientSessionHandle1, dbSession1.Current);
 
-            var transactionFactory2 = scope2.ServiceProvider.GetService<ITransactionFactory>();
-            var dbSession2 = scope2.ServiceProvider.GetService<MongoDbSession>();
-            var clientSessionHandle2 = scope2.ServiceProvider.GetService<IClientSessionHandle>();
+            var transactionFactory2 = scope2.ServiceProvider.GetRequiredService<ITransactionFactory>();
+            var dbSession2 = scope2.ServiceProvider.GetRequiredService<MongoDbSession>();
+            var clientSessionHandle2 = scope2.ServiceProvider.GetRequiredService<IClientSessionHandle>();
             Assert.NotNull(clientSessionHandle2);
             Assert.Equal(clientSessionHandle2, dbSession2.Current);
 
@@ -65,12 +65,12 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
             var countDocuments = await dbContext.Documents.EstimatedDocumentCountAsync(cancellationToken: TestContext.Current.CancellationToken);
             Assert.Equal(1, countDocuments);
 
-            // Проверяем, что добавленный документ не доступен в другой транзакции
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             using var transaction2 = await transactionFactory2.BeginAsync(TestContext.Current.CancellationToken);
             countDocuments = await dbContext.Documents.CountDocumentsAsync(dbSession2.Current, Builders<Document>.Filter.Empty, cancellationToken: TestContext.Current.CancellationToken);
             Assert.Equal(0, countDocuments);
 
-            // Проверяем, что добавленный элемент не доступен без транзакции
+            // пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
             countDocuments = await dbContext.Documents.CountDocumentsAsync(Builders<Document>.Filter.Empty, cancellationToken: TestContext.Current.CancellationToken);
             Assert.Equal(0, countDocuments);
 
@@ -85,9 +85,9 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
         {
             await using var scope1 = serviceProvider.CreateAsyncScope();
 
-            var dbContext = scope1.ServiceProvider.GetService<TestDbContext>();
-            var transactionFactory1 = scope1.ServiceProvider.GetService<ITransactionFactory>();
-            var dbSession1 = scope1.ServiceProvider.GetService<MongoDbSession>();
+            var dbContext = scope1.ServiceProvider.GetRequiredService<TestDbContext>();
+            var transactionFactory1 = scope1.ServiceProvider.GetRequiredService<ITransactionFactory>();
+            var dbSession1 = scope1.ServiceProvider.GetRequiredService<MongoDbSession>();
 
             using var transaction1 = await transactionFactory1.BeginAsync(TestContext.Current.CancellationToken);
             await dbContext.Documents.InsertOneAsync(dbSession1.Current, new ArticleDocument { Name = "Test", Author = "test" }, cancellationToken: TestContext.Current.CancellationToken);

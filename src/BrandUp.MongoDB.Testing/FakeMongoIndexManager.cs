@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,15 +38,15 @@ namespace BrandUp.MongoDB.Testing
 
         public IEnumerable<string> CreateMany(IEnumerable<CreateIndexModel<TDocument>> models, CancellationToken cancellationToken = default)
         {
-            return CreateMany(null, models, null, cancellationToken);
+            return CreateMany(null!, models, null!, cancellationToken);
         }
         public IEnumerable<string> CreateMany(IEnumerable<CreateIndexModel<TDocument>> models, CreateManyIndexesOptions options, CancellationToken cancellationToken = default)
         {
-            return CreateMany(null, models, options, cancellationToken);
+            return CreateMany(null!, models, options, cancellationToken);
         }
         public IEnumerable<string> CreateMany(IClientSessionHandle session, IEnumerable<CreateIndexModel<TDocument>> models, CancellationToken cancellationToken = default)
         {
-            return CreateMany(session, null, cancellationToken);
+            return CreateMany(session, null!, cancellationToken);
         }
         public IEnumerable<string> CreateMany(IClientSessionHandle session, IEnumerable<CreateIndexModel<TDocument>> models, CreateManyIndexesOptions options, CancellationToken cancellationToken = default)
         {
@@ -75,51 +75,51 @@ namespace BrandUp.MongoDB.Testing
             return Task.FromResult(CreateMany(session, models, options, cancellationToken));
         }
 
-        public string CreateOne(CreateIndexModel<TDocument> model, CreateOneIndexOptions options = null, CancellationToken cancellationToken = default)
+        public string CreateOne(CreateIndexModel<TDocument> model, CreateOneIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return CreateOne(null, model, options, cancellationToken);
+            return CreateOne(null!, model, options, cancellationToken);
         }
-        public string CreateOne(IndexKeysDefinition<TDocument> keys, CreateIndexOptions options = null, CancellationToken cancellationToken = default)
+        public string CreateOne(IndexKeysDefinition<TDocument> keys, CreateIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return CreateOne(null, keys, options, cancellationToken);
+            return CreateOne(null!, keys, options, cancellationToken);
         }
-        public string CreateOne(IClientSessionHandle session, IndexKeysDefinition<TDocument> keys, CreateIndexOptions options = null, CancellationToken cancellationToken = default)
+        public string CreateOne(IClientSessionHandle session, IndexKeysDefinition<TDocument> keys, CreateIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return CreateOne(session, new CreateIndexModel<TDocument>(keys, options), null, cancellationToken);
+            return CreateOne(session, new CreateIndexModel<TDocument>(keys, options), null!, cancellationToken);
         }
-        public string CreateOne(IClientSessionHandle session, CreateIndexModel<TDocument> model, CreateOneIndexOptions options = null, CancellationToken cancellationToken = default)
+        public string CreateOne(IClientSessionHandle session, CreateIndexModel<TDocument> model, CreateOneIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Insert(model);
         }
 
-        public Task<string> CreateOneAsync(CreateIndexModel<TDocument> model, CreateOneIndexOptions options = null, CancellationToken cancellationToken = default)
+        public Task<string> CreateOneAsync(CreateIndexModel<TDocument> model, CreateOneIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(CreateOne(model, options, cancellationToken));
         }
-        public Task<string> CreateOneAsync(IndexKeysDefinition<TDocument> keys, CreateIndexOptions options = null, CancellationToken cancellationToken = default)
+        public Task<string> CreateOneAsync(IndexKeysDefinition<TDocument> keys, CreateIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(CreateOne(keys, options, cancellationToken));
         }
-        public Task<string> CreateOneAsync(IClientSessionHandle session, IndexKeysDefinition<TDocument> keys, CreateIndexOptions options = null, CancellationToken cancellationToken = default)
+        public Task<string> CreateOneAsync(IClientSessionHandle session, IndexKeysDefinition<TDocument> keys, CreateIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(CreateOne(session, keys, options, cancellationToken));
         }
-        public Task<string> CreateOneAsync(IClientSessionHandle session, CreateIndexModel<TDocument> model, CreateOneIndexOptions options = null, CancellationToken cancellationToken = default)
+        public Task<string> CreateOneAsync(IClientSessionHandle session, CreateIndexModel<TDocument> model, CreateOneIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(CreateOne(session, model, options, cancellationToken));
         }
 
         public void DropAll(DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            DropAll(null, options, cancellationToken);
+            DropAll(null!, options, cancellationToken);
         }
         public void DropAll(CancellationToken cancellationToken = default)
         {
-            DropAll(null, null, cancellationToken);
+            DropAll(null!, null!, cancellationToken);
         }
         public void DropAll(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
-            DropAll(session, null, cancellationToken);
+            DropAll(session, null!, cancellationToken);
         }
         public void DropAll(IClientSessionHandle session, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
@@ -128,15 +128,15 @@ namespace BrandUp.MongoDB.Testing
 
         public Task DropAllAsync(DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            return DropAllAsync(null, options, cancellationToken);
+            return DropAllAsync(null!, options, cancellationToken);
         }
         public Task DropAllAsync(CancellationToken cancellationToken = default)
         {
-            return DropAllAsync(null, null, cancellationToken);
+            return DropAllAsync(null!, null!, cancellationToken);
         }
         public Task DropAllAsync(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
-            return DropAllAsync(session, null, cancellationToken);
+            return DropAllAsync(session, null!, cancellationToken);
         }
         public Task DropAllAsync(IClientSessionHandle session, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
@@ -147,15 +147,15 @@ namespace BrandUp.MongoDB.Testing
 
         public void DropOne(string name, CancellationToken cancellationToken = default)
         {
-            DropOne(null, name, null, cancellationToken);
+            DropOne(null!, name, null!, cancellationToken);
         }
         public void DropOne(string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            DropOne(null, name, options, cancellationToken);
+            DropOne(null!, name, options, cancellationToken);
         }
         public void DropOne(IClientSessionHandle session, string name, CancellationToken cancellationToken = default)
         {
-            DropOne(session, name, null, cancellationToken);
+            DropOne(session, name, null!, cancellationToken);
         }
         public void DropOne(IClientSessionHandle session, string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
@@ -165,15 +165,15 @@ namespace BrandUp.MongoDB.Testing
 
         public Task DropOneAsync(string name, CancellationToken cancellationToken = default)
         {
-            return DropOneAsync(null, name, null, cancellationToken);
+            return DropOneAsync(null!, name, null!, cancellationToken);
         }
         public Task DropOneAsync(string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            return DropOneAsync(null, name, options, cancellationToken);
+            return DropOneAsync(null!, name, options, cancellationToken);
         }
         public Task DropOneAsync(IClientSessionHandle session, string name, CancellationToken cancellationToken = default)
         {
-            return DropOneAsync(session, name, null, cancellationToken);
+            return DropOneAsync(session, name, null!, cancellationToken);
         }
         public Task DropOneAsync(IClientSessionHandle session, string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
@@ -184,7 +184,7 @@ namespace BrandUp.MongoDB.Testing
 
         public IAsyncCursor<BsonDocument> List(CancellationToken cancellationToken = default)
         {
-            return List((IClientSessionHandle)null, cancellationToken);
+            return List((IClientSessionHandle)null!, cancellationToken);
         }
         public IAsyncCursor<BsonDocument> List(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
@@ -201,10 +201,10 @@ namespace BrandUp.MongoDB.Testing
 
         public IAsyncCursor<BsonDocument> List(ListIndexesOptions options, CancellationToken cancellationToken = default)
         {
-            return List(null, options, cancellationToken);
+            return List(null!, options, cancellationToken);
         }
 
-        public IAsyncCursor<BsonDocument> List(IClientSessionHandle session, ListIndexesOptions options = null, CancellationToken cancellationToken = default)
+        public IAsyncCursor<BsonDocument> List(IClientSessionHandle session, ListIndexesOptions? options = null, CancellationToken cancellationToken = default)
         {
             return new FakeAsyncCursor<BsonDocument>(indexes.Values);
         }
@@ -214,7 +214,7 @@ namespace BrandUp.MongoDB.Testing
             return Task.FromResult(List(options, cancellationToken));
         }
 
-        public Task<IAsyncCursor<BsonDocument>> ListAsync(IClientSessionHandle session, ListIndexesOptions options = null, CancellationToken cancellationToken = default)
+        public Task<IAsyncCursor<BsonDocument>> ListAsync(IClientSessionHandle session, ListIndexesOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(List(session, options, cancellationToken));
         }

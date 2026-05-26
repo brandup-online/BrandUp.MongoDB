@@ -67,8 +67,8 @@ namespace BrandUp.MongoDB.Testing.Tests
         {
             [BsonId]
             public Guid Id { get; set; }
-            public string Name { get; set; }
-            public string Header { get; set; }
+            public string Name { get; set; } = null!;
+            public string Header { get; set; } = null!;
         }
     }
 }

@@ -64,7 +64,7 @@ namespace BrandUp.MongoDB
             return false;
         }
 
-        public static async Task<bool> DropIfExistAsync<TDocument>(this IMongoIndexManager<TDocument> indexManager, string name, DropIndexOptions options = null, CancellationToken cancellationToken = default)
+        public static async Task<bool> DropIfExistAsync<TDocument>(this IMongoIndexManager<TDocument> indexManager, string name, DropIndexOptions? options = null, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(name);
 

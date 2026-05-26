@@ -32,16 +32,16 @@ namespace BrandUp.MongoDB.Tests
     public abstract class Document
     {
         [BsonId(IdGenerator = typeof(ObjectIdGenerator)), BsonRepresentation(BsonType.ObjectId)]
-        public string Id { get; set; }
+        public string Id { get; set; } = null!;
     }
 
     [MongoCollection]
     [BsonKnownTypes(typeof(NewsDocument), typeof(News2Document))]
     public class ArticleDocument : Document
     {
-        public SeoOptions Seo { get; set; }
-        public List<Tag> Tags { get; set; }
-        public CommentDocument[] Comments { get; set; }
+        public SeoOptions? Seo { get; set; }
+        public List<Tag>? Tags { get; set; }
+        public CommentDocument[]? Comments { get; set; }
     }
 
     public class NewsDocument : ArticleDocument

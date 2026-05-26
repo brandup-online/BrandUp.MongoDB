@@ -29,7 +29,7 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests
                 });
 
             serviceProvider = services.BuildServiceProvider();
-            dbContext = serviceProvider.GetService<TestDbContext>();
+            dbContext = serviceProvider.GetRequiredService<TestDbContext>();
         }
 
         #region IAsyncLifetime members

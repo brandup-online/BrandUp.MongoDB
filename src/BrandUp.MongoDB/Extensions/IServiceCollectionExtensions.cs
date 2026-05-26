@@ -6,7 +6,7 @@ namespace Microsoft.Extensions.DependencyInjection
 {
     public static class IServiceCollectionExtensions
     {
-        public static IServiceCollection AddMongoDb(this IServiceCollection services, Action<MongoDbOptions> configure = null)
+        public static IServiceCollection AddMongoDb(this IServiceCollection services, Action<MongoDbOptions>? configure = null)
         {
             var optionsBuilder = services
                 .AddOptions<MongoDbOptions>()

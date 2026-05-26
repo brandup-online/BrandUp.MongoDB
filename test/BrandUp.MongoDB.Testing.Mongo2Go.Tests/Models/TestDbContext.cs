@@ -18,14 +18,14 @@ namespace BrandUp.MongoDB.Testing.Mongo2Go.Tests.Models
         [BsonId, BsonRepresentation(BsonType.ObjectId)]
         public ObjectId Id { get; set; }
         [BsonRequired]
-        public string Name { get; set; }
+        public string Name { get; set; } = null!;
     }
 
     [BsonDiscriminator("Article", Required = true)]
     public class ArticleDocument : Document
     {
         [BsonRequired]
-        public string Author { get; set; }
+        public string Author { get; set; } = null!;
     }
 
     [BsonDiscriminator("News", Required = true)]

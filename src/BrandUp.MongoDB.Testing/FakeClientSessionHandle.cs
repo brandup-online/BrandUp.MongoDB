@@ -72,7 +72,7 @@ namespace BrandUp.MongoDB.Testing
             return new FakeClientSessionHandle(client);
         }
 
-        public void StartTransaction(TransactionOptions transactionOptions = null)
+        public void StartTransaction(TransactionOptions? transactionOptions = null)
         {
             if (isInTransaction)
                 throw new InvalidOperationException();
@@ -80,7 +80,7 @@ namespace BrandUp.MongoDB.Testing
             isInTransaction = true;
         }
 
-        public TResult WithTransaction<TResult>(Func<IClientSessionHandle, CancellationToken, TResult> callback, TransactionOptions transactionOptions = null, CancellationToken cancellationToken = default)
+        public TResult WithTransaction<TResult>(Func<IClientSessionHandle, CancellationToken, TResult> callback, TransactionOptions? transactionOptions = null, CancellationToken cancellationToken = default)
         {
             if (!isInTransaction)
                 throw new InvalidOperationException();
@@ -88,7 +88,7 @@ namespace BrandUp.MongoDB.Testing
             return callback(this, cancellationToken);
         }
 
-        public Task<TResult> WithTransactionAsync<TResult>(Func<IClientSessionHandle, CancellationToken, Task<TResult>> callbackAsync, TransactionOptions transactionOptions = null, CancellationToken cancellationToken = default)
+        public Task<TResult> WithTransactionAsync<TResult>(Func<IClientSessionHandle, CancellationToken, Task<TResult>> callbackAsync, TransactionOptions? transactionOptions = null, CancellationToken cancellationToken = default)
         {
             if (!isInTransaction)
                 throw new InvalidOperationException();

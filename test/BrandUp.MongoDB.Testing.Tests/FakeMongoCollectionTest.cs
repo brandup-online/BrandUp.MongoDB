@@ -148,7 +148,7 @@ namespace BrandUp.MongoDB.Testing.Tests
             [BsonId]
             [BsonGuidRepresentation(GuidRepresentation.Standard)]
             public Guid Id { get; set; }
-            public string Name { get; set; }
+            public string Name { get; set; } = null!;
         }
     }
 }

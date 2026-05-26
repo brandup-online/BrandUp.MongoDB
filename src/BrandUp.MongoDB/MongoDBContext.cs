@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using MongoDB.Driver;
@@ -8,13 +7,13 @@ namespace BrandUp.MongoDB
 {
     public abstract class MongoDbContext
     {
-        MongoDbContextOptions options;
+        MongoDbContextOptions options = null!;
         readonly List<IMongoDbCollectionMetadata> collections = [];
         readonly Dictionary<Type, int> collectionTypes = [];
         readonly Dictionary<string, int> collectionNames = [];
 
-        public IMongoClient Client { get; private set; }
-        public IMongoDatabase Database { get; private set; }
+        public IMongoClient Client { get; private set; } = null!;
+        public IMongoDatabase Database { get; private set; } = null!;
         public IEnumerable<IMongoDbCollectionMetadata> Collections => collections;
 
         #region Methods
@@ -25,7 +24,7 @@ namespace BrandUp.MongoDB
 
             var optionsFactory = serviceProvider.GetRequiredService<IOptionsFactory<MongoDbContextOptions>>();
 
-            var optionsName = GetType().FullName;
+            var optionsName = GetType().FullName!;
             options = optionsFactory.Create(optionsName);
 
             Client = mongoClientFactory.ResolveClient();
@@ -44,7 +43,7 @@ namespace BrandUp.MongoDB
             }
         }
 
-        internal bool TryGetCollectionContext(Type documentType, out IMongoDbCollectionMetadata collectionContext)
+        internal bool TryGetCollectionContext(Type documentType, [MaybeNullWhen(false)] out IMongoDbCollectionMetadata collectionContext)
         {
             ArgumentNullException.ThrowIfNull(documentType);
 
@@ -58,7 +57,7 @@ namespace BrandUp.MongoDB
             return true;
         }
 
-        internal bool TryGetCollectionContext(string collectionName, out IMongoDbCollectionMetadata collectionContext)
+        internal bool TryGetCollectionContext(string collectionName, [MaybeNullWhen(false)] out IMongoDbCollectionMetadata collectionContext)
         {
             ArgumentNullException.ThrowIfNull(collectionName);
 
@@ -72,10 +71,10 @@ namespace BrandUp.MongoDB
             return true;
         }
 
-        public bool TryGetCollectionContext<TDocument>(out MongoDbCollectionMetadata<TDocument> collectionContext)
+        public bool TryGetCollectionContext<TDocument>([MaybeNullWhen(false)] out MongoDbCollectionMetadata<TDocument> collectionContext)
             where TDocument : class
         {
-            if (!TryGetCollectionContext(typeof(TDocument), out IMongoDbCollectionMetadata collectionMetadata2))
+            if (!TryGetCollectionContext(typeof(TDocument), out var collectionMetadata2))
             {
                 collectionContext = null;
                 return false;
@@ -88,7 +87,7 @@ namespace BrandUp.MongoDB
         public MongoDbCollectionMetadata<TDocument> GetCollectionContext<TDocument>()
             where TDocument : class
         {
-            if (!TryGetCollectionContext(out MongoDbCollectionMetadata<TDocument> collectionContext))
+            if (!TryGetCollectionContext(out MongoDbCollectionMetadata<TDocument>? collectionContext))
                 throw new ArgumentException($"Not found collection context of document type \"{typeof(TDocument).AssemblyQualifiedName}\" by \"{GetType().AssemblyQualifiedName}\".");
 
             return collectionContext;

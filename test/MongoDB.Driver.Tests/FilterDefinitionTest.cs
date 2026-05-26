@@ -39,9 +39,9 @@ namespace MongoDB.Driver.Tests
         public class Document
         {
             public Guid Id { get; set; }
-            public string Title { get; set; }
+            public string Title { get; set; } = null!;
 
-            public Document Doc { get; set; }
+            public Document? Doc { get; set; }
         }
     }
 }

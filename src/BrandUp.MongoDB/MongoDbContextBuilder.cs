@@ -32,7 +32,7 @@ namespace BrandUp.MongoDB
         readonly Dictionary<Type, int> collectionTypes = [];
         readonly Dictionary<string, int> collectionNames = [];
         readonly HashSet<Type> documentTypes = [];
-        TContext dbContext;
+        TContext? dbContext;
 
         public MongoDbContextBuilder(IServiceCollection services)
         {
@@ -86,7 +86,9 @@ namespace BrandUp.MongoDB
                             }
                             else if (propertyType.IsArray)
                             {
-                                AddDocumentType(propertyType.GetElementType());
+                                var elementType = propertyType.GetElementType();
+                                if (elementType != null)
+                                    AddDocumentType(elementType);
                                 break;
                             }
 
@@ -111,13 +113,18 @@ namespace BrandUp.MongoDB
 
             foreach (var knownTypeAttribute in type.GetCustomAttributes<KnownTypeAttribute>(false))
             {
-                if (!knownTypeAttribute.Type.IsSubclassOf(type))
-                    throw new InvalidOperationException($"Type {knownTypeAttribute.Type.FullName} is not overide {type.FullName}.");
+                var knownType = knownTypeAttribute.Type;
+                if (knownType == null)
+                    continue;
 
-                AddDocumentType(knownTypeAttribute.Type);
+                if (!knownType.IsSubclassOf(type))
+                    throw new InvalidOperationException($"Type {knownType.FullName} is not overide {type.FullName}.");
+
+                AddDocumentType(knownType);
             }
 
-            AddDocumentType(type.BaseType);
+            if (type.BaseType != null)
+                AddDocumentType(type.BaseType);
         }
 
         void RegisterConventions(string name)
@@ -148,7 +155,7 @@ namespace BrandUp.MongoDB
                 throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} not contain {nameof(MongoCollectionAttribute)} attribute.");
 
             var collectionMetadataType = MongoCollectionMetadataType.MakeGenericType(documentType);
-            var collectionMetadata = (IMongoDbCollectionMetadata)Activator.CreateInstance(collectionMetadataType, true);
+            var collectionMetadata = (IMongoDbCollectionMetadata)Activator.CreateInstance(collectionMetadataType, true)!;
 
             var index = collections.Count;
             collections.Add(collectionMetadata);
@@ -181,11 +188,12 @@ namespace BrandUp.MongoDB
             if (dbContext != null)
                 return dbContext;
 
-            var dbContextName = ContextType.FullName;
+            var dbContextName = ContextType.FullName!;
 
             RegisterConventions(dbContextName);
 
-            var constructor = ContextType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
+            var constructor = ContextType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault()
+                ?? throw new InvalidOperationException($"Context {ContextType.FullName} has no public constructor.");
 
             var constructorParamsInfo = constructor.GetParameters();
             var constructorParams = new object[constructorParamsInfo.Length];
