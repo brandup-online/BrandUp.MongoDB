@@ -5,6 +5,11 @@ using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
+    /// <summary>
+    /// Base class for a strongly-typed MongoDB database context. Derive a class, declare
+    /// <see cref="IMongoCollection{TDocument}"/> properties for each collection, and register
+    /// the context with <c>services.AddMongoDbContext&lt;TContext&gt;(...)</c>.
+    /// </summary>
     public abstract class MongoDbContext
     {
         MongoDbContextOptions options = null!;
@@ -12,8 +17,13 @@ namespace BrandUp.MongoDB
         readonly Dictionary<Type, int> collectionTypes = [];
         readonly Dictionary<string, int> collectionNames = [];
 
+        /// <summary>The shared <see cref="IMongoClient"/> resolved from the registered <see cref="IMongoDbClientFactory"/>.</summary>
         public IMongoClient Client { get; private set; } = null!;
+
+        /// <summary>The database handle for the database named in <see cref="MongoDbContextOptions.DatabaseName"/>.</summary>
         public IMongoDatabase Database { get; private set; } = null!;
+
+        /// <summary>The collection metadata discovered on this context (one entry per registered document type).</summary>
         public IEnumerable<IMongoDbCollectionMetadata> Collections => collections;
 
         #region Methods
@@ -71,6 +81,9 @@ namespace BrandUp.MongoDB
             return true;
         }
 
+        /// <summary>
+        /// Attempts to resolve the <see cref="MongoDbCollectionMetadata{TDocument}"/> for the given document type.
+        /// </summary>
         public bool TryGetCollectionContext<TDocument>([MaybeNullWhen(false)] out MongoDbCollectionMetadata<TDocument> collectionContext)
             where TDocument : class
         {
@@ -84,6 +97,11 @@ namespace BrandUp.MongoDB
             return true;
         }
 
+        /// <summary>
+        /// Resolves the <see cref="MongoDbCollectionMetadata{TDocument}"/> for the given document type,
+        /// throwing if the document type was not registered on this context.
+        /// </summary>
+        /// <exception cref="ArgumentException">No collection for <typeparamref name="TDocument"/> is registered on this context.</exception>
         public MongoDbCollectionMetadata<TDocument> GetCollectionContext<TDocument>()
             where TDocument : class
         {
@@ -93,6 +111,8 @@ namespace BrandUp.MongoDB
             return collectionContext;
         }
 
+        /// <summary>Returns the <see cref="IMongoCollection{TDocument}"/> for the registered document type.</summary>
+        /// <exception cref="ArgumentException">No collection for <typeparamref name="TDocument"/> is registered on this context.</exception>
         public IMongoCollection<TDocument> GetCollection<TDocument>()
             where TDocument : class
         {

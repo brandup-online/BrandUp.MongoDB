@@ -95,4 +95,9 @@ namespace BrandUp.MongoDB.Tests
     {
 
     }
+
+    [MongoCollection]
+    public class UnregisteredDocument
+    {
+    }
 }

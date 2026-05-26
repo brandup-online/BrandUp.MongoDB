@@ -4,6 +4,10 @@ using System.Threading.Tasks;
 
 namespace BrandUp.MongoDB
 {
+    /// <summary>
+    /// A transaction handle returned by <see cref="MongoDbSession.BeginAsync"/>. If <see cref="CommitAsync"/>
+    /// is not called before disposal the transaction is aborted. Supports <c>await using</c>.
+    /// </summary>
     public class MongoDbTransaction : ITransaction
     {
         readonly MongoDbSession session;
@@ -21,6 +25,7 @@ namespace BrandUp.MongoDB
             isChild = true;
         }
 
+        /// <summary>Commits the outer transaction. A no-op for nested handles.</summary>
         public Task CommitAsync(CancellationToken cancellationToken = default)
         {
             return isChild
@@ -79,8 +84,14 @@ namespace BrandUp.MongoDB
         #endregion
     }
 
+    /// <summary>
+    /// A unit-of-work that commits explicitly via <see cref="CommitAsync"/> or aborts on disposal.
+    /// Implementations support both synchronous (<see cref="IDisposable"/>) and asynchronous
+    /// (<see cref="IAsyncDisposable"/>) abort paths.
+    /// </summary>
     public interface ITransaction : IDisposable, IAsyncDisposable
     {
+        /// <summary>Commits the transaction.</summary>
         Task CommitAsync(CancellationToken cancellationToken = default);
     }
 }

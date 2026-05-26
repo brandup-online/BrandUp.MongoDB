@@ -5,12 +5,18 @@ using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
+    /// <summary>
+    /// A scoped wrapper around <see cref="IClientSessionHandle"/> that exposes a
+    /// transaction-factory API. Registered as scoped by <c>AddMongoDb</c>; one session
+    /// per DI scope (typically per HTTP request).
+    /// </summary>
     public class MongoDbSession : ITransactionFactory, IDisposable, IAsyncDisposable
     {
         readonly IMongoClient client;
         readonly IClientSessionHandle clientSession;
         MongoDbTransaction? transaction;
 
+        /// <summary>The underlying client session handle. Pass this to driver APIs that accept an <see cref="IClientSessionHandle"/>.</summary>
         public IClientSessionHandle Current => clientSession;
 
         public MongoDbSession(IMongoDbClientFactory clientFactory)
@@ -27,6 +33,10 @@ namespace BrandUp.MongoDB
             });
         }
 
+        /// <summary>
+        /// Starts a transaction on the underlying session, or returns a no-op child handle
+        /// when called inside an already-active transaction.
+        /// </summary>
         public Task<ITransaction> BeginAsync(CancellationToken cancellationToken = default)
         {
             if (clientSession.IsInTransaction)
@@ -66,8 +76,10 @@ namespace BrandUp.MongoDB
         }
     }
 
+    /// <summary>Begins a new <see cref="ITransaction"/> on the ambient session.</summary>
     public interface ITransactionFactory
     {
+        /// <summary>Starts a transaction. Use <c>await using</c> to ensure the abort path runs asynchronously on failure.</summary>
         Task<ITransaction> BeginAsync(CancellationToken cancellationToken = default);
     }
 }

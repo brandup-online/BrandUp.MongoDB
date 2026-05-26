@@ -1,11 +1,19 @@
 ﻿using System;
 using BrandUp.MongoDB;
 using Microsoft.Extensions.Options;
+using MongoDB.Driver;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
+    /// <summary>DI registration helpers for <see cref="BrandUp.MongoDB"/>.</summary>
     public static class IServiceCollectionExtensions
     {
+        /// <summary>
+        /// Registers the shared <see cref="IMongoDbClientFactory"/>, scoped <see cref="MongoDbSession"/>,
+        /// and an <see cref="ITransactionFactory"/> alias. Call once per <see cref="IServiceCollection"/>.
+        /// </summary>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configure">Optional configuration of the global <see cref="MongoDbOptions"/>.</param>
         public static IServiceCollection AddMongoDb(this IServiceCollection services, Action<MongoDbOptions>? configure = null)
         {
             var optionsBuilder = services
@@ -25,6 +33,13 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
+        /// <summary>
+        /// Registers a <see cref="MongoDbContext"/> subclass as a singleton, discovers its
+        /// <see cref="IMongoCollection{TDocument}"/> properties, and returns a builder for further configuration.
+        /// </summary>
+        /// <typeparam name="TContext">The concrete context type.</typeparam>
+        /// <param name="services">The service collection.</param>
+        /// <param name="configureOptions">Configures <see cref="MongoDbContextOptions"/> for this context.</param>
         public static MongoDbContextBuilder<TContext> AddMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextOptions> configureOptions)
             where TContext : MongoDbContext
         {
@@ -45,6 +60,10 @@ namespace Microsoft.Extensions.DependencyInjection
             return builder;
         }
 
+        /// <summary>
+        /// Adds an additional configuration step for an already-registered <see cref="MongoDbContext"/>.
+        /// Call this after <see cref="AddMongoDbContext{TContext}"/> to layer extra options.
+        /// </summary>
         public static IServiceCollection ConfigureMongoDbContext<TContext>(this IServiceCollection services, Action<MongoDbContextOptions> configureOptions)
             where TContext : MongoDbContext
         {

@@ -11,14 +11,32 @@ using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
+    /// <summary>
+    /// Untyped builder surface for a registered <see cref="MongoDbContext"/>. Extension methods
+    /// (e.g. <see cref="MongoDbContextBuilderExtensions"/>) operate against this interface so they
+    /// can target any concrete context type.
+    /// </summary>
     public interface IMongoDbContextBuilder
     {
+        /// <summary>The DI container being configured.</summary>
         IServiceCollection Services { get; }
+
+        /// <summary>Concrete <see cref="MongoDbContext"/> subclass being built.</summary>
         Type ContextType { get; }
+
+        /// <summary>Conventions accumulated for the document types reachable from this context.</summary>
         ConventionPack Conventions { get; }
+
+        /// <summary>Collection metadata discovered or explicitly registered on the builder.</summary>
         IEnumerable<IMongoDbCollectionMetadata> Collections { get; }
+
+        /// <summary>Registers an additional collection by document type.</summary>
         IMongoDbContextBuilder RegisterCollection(Type documentType);
+
+        /// <summary>Returns true if a collection for the given document type is already registered.</summary>
         bool HasCollectionType(Type documentType);
+
+        /// <summary>Returns true if a collection with the given name (case-insensitive) is registered.</summary>
         bool HasCollectionName(string name);
     }
 

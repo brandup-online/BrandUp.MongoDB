@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using MongoDB.Driver;
 using Xunit;
 
 namespace BrandUp.MongoDB.Tests
@@ -64,6 +65,55 @@ namespace BrandUp.MongoDB.Tests
             Assert.Same(scope.GetRequiredService<TestServiceA>(), dbContext.A);
             Assert.Same(scope.GetRequiredService<TestServiceB>(), dbContext.B);
             Assert.Same(scope.GetRequiredService<TestServiceC>(), dbContext.C);
+        }
+
+        [Fact]
+        public void ConfigureCollection_InvokesBothHooksOnInitialize()
+        {
+            CreateCollectionOptions? observedCreate = null;
+            MongoCollectionSettings? observedSettings = null;
+
+            var services = new ServiceCollection();
+            services
+                .AddSingleton<TestService>()
+                .AddFakeMongoDb();
+
+            services
+                .AddMongoDbContext<TestDbContext>(options => options.DatabaseName = "Test")
+                .ConfigureCollection<TaskDocument>(
+                    configureSettings: s =>
+                    {
+                        s.AssignIdOnInsert = false;
+                        observedSettings = s;
+                    },
+                    configureCreate: c =>
+                    {
+                        c.Capped = true;
+                        observedCreate = c;
+                    });
+
+            using var scope = services.BuildServiceProvider();
+            var dbContext = scope.GetRequiredService<TestDbContext>();
+
+            Assert.NotNull(dbContext);
+            Assert.NotNull(observedSettings);
+            Assert.False(observedSettings!.AssignIdOnInsert);
+            Assert.NotNull(observedCreate);
+            Assert.True(observedCreate!.Capped);
+        }
+
+        [Fact]
+        public void ConfigureCollection_UnregisteredDocument_Throws()
+        {
+            var services = new ServiceCollection();
+            services
+                .AddSingleton<TestService>()
+                .AddFakeMongoDb();
+
+            var builder = services.AddMongoDbContext<TestDbContext>(options => options.DatabaseName = "Test");
+
+            Assert.Throws<InvalidOperationException>(() =>
+                builder.ConfigureCollection<UnregisteredDocument>(configureSettings: _ => { }));
         }
 
         [Fact]
