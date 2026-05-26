@@ -38,7 +38,7 @@ namespace BrandUp.MongoDB
 
                 this.collections.Add(collection);
                 collectionTypes.Add(collection.DocumentType, i);
-                collectionNames.Add(collection.Name, i);
+                collectionNames.Add(collection.Name.ToLowerInvariant(), i);
 
                 i++;
             }
@@ -62,7 +62,7 @@ namespace BrandUp.MongoDB
         {
             ArgumentNullException.ThrowIfNull(collectionName);
 
-            if (!collectionNames.TryGetValue(collectionName.ToLower(), out int index))
+            if (!collectionNames.TryGetValue(collectionName.ToLowerInvariant(), out int index))
             {
                 collectionContext = null;
                 return false;

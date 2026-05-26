@@ -394,10 +394,14 @@ namespace BrandUp.MongoDB.Testing
         }
         public TProjection FindOneAndDelete<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection> options = null, CancellationToken cancellationToken = default)
         {
-            var filded = FindSync<TDocument>(session, filter, null, cancellationToken);
-            var doc = filded.SingleOrDefault(cancellationToken);
-            if (docObjects.Remove(doc))
-                throw new Exception();
+            var filtered = Filter(filter);
+            if (filtered.Count == 0)
+                return default;
+            if (filtered.Count > 1)
+                throw new InvalidOperationException();
+
+            var doc = filtered[0];
+            DeleteDocuments(filtered);
             return (TProjection)(object)doc;
         }
         public Task<TProjection> FindOneAndDeleteAsync<TProjection>(FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection> options = null, CancellationToken cancellationToken = default)

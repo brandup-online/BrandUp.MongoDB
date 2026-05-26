@@ -153,7 +153,7 @@ namespace BrandUp.MongoDB
             var index = collections.Count;
             collections.Add(collectionMetadata);
             collectionTypes.Add(documentType, index);
-            collectionNames.Add(collectionMetadata.Name.ToLower(), index);
+            collectionNames.Add(collectionMetadata.Name.ToLowerInvariant(), index);
 
             AddDocumentType(documentType);
 
@@ -171,7 +171,7 @@ namespace BrandUp.MongoDB
         {
             ArgumentNullException.ThrowIfNull(name);
 
-            return collectionNames.ContainsKey(name.ToLower());
+            return collectionNames.ContainsKey(name.ToLowerInvariant());
         }
 
         #endregion
@@ -188,17 +188,15 @@ namespace BrandUp.MongoDB
             var constructor = ContextType.GetConstructors(BindingFlags.Instance | BindingFlags.Public).FirstOrDefault();
 
             var constructorParamsInfo = constructor.GetParameters();
-            var constratorParams = new object[constructorParamsInfo.Length];
+            var constructorParams = new object[constructorParamsInfo.Length];
             for (var i = 0; i < constructorParamsInfo.Length; i++)
             {
                 var parameter = constructorParamsInfo[i];
                 var service = serviceProvider.GetRequiredService(parameter.ParameterType);
-                constratorParams[i] = service;
-
-                i++;
+                constructorParams[i] = service;
             }
 
-            dbContext = (TContext)constructor.Invoke(constratorParams);
+            dbContext = (TContext)constructor.Invoke(constructorParams);
             dbContext.Initialize(serviceProvider, collections);
 
             return dbContext;
