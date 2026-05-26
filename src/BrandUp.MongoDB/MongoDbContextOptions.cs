@@ -14,7 +14,7 @@ namespace BrandUp.MongoDB
         public ValidateOptionsResult Validate(string name, MongoDbContextOptions options)
         {
             if (string.IsNullOrWhiteSpace(options.DatabaseName))
-                return ValidateOptionsResult.Fail($"Paramenter {nameof(MongoDbContextOptions.DatabaseName)} is required.");
+                return ValidateOptionsResult.Fail($"Parameter {nameof(MongoDbContextOptions.DatabaseName)} is required.");
 
             return ValidateOptionsResult.Success;
         }

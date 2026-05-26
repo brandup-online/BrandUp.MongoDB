@@ -10,7 +10,7 @@ namespace Microsoft.Extensions.DependencyInjection
         {
             var optionsBuilder = services
                 .AddOptions<MongoDbOptions>()
-                .Validate(options => !string.IsNullOrEmpty(options.ConnectionString), $"Paramenter {nameof(MongoDbOptions.ConnectionString)} is required.");
+                .Validate(options => !string.IsNullOrEmpty(options.ConnectionString), $"Parameter {nameof(MongoDbOptions.ConnectionString)} is required.");
 
             if (configure != null)
                 optionsBuilder.Configure(configure);

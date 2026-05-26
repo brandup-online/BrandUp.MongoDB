@@ -6,7 +6,7 @@ using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
 {
-    public abstract class MongoDbContext : IDisposable
+    public abstract class MongoDbContext
     {
         MongoDbContextOptions options;
         readonly List<IMongoDbCollectionMetadata> collections = [];
@@ -99,25 +99,6 @@ namespace BrandUp.MongoDB
         {
             var collectionContext = GetCollectionContext<TDocument>();
             return collectionContext.Collection;
-        }
-
-        #endregion
-
-        #region IDisposable members
-
-        private bool disposedValue = false;
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (!disposedValue)
-                disposedValue = true;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-
-            GC.SuppressFinalize(this);
         }
 
         #endregion

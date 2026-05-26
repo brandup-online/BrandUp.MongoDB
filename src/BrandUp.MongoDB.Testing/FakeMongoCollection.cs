@@ -125,7 +125,7 @@ namespace BrandUp.MongoDB.Testing
         }
         private DeleteResult DeleteDocuments(IEnumerable<TDocument> documents)
         {
-            var deletedCound = 0;
+            var deletedCount = 0;
 
             foreach (var docObject in documents)
             {
@@ -141,10 +141,10 @@ namespace BrandUp.MongoDB.Testing
                 docs.RemoveAt(docIndex);
                 docObjects.RemoveAt(docIndex);
 
-                deletedCound++;
+                deletedCount++;
             }
 
-            return new DeleteResult.Acknowledged(deletedCound);
+            return new DeleteResult.Acknowledged(deletedCount);
         }
         private static BsonValue GetDocumentIdValue(BsonDocument document)
         {
