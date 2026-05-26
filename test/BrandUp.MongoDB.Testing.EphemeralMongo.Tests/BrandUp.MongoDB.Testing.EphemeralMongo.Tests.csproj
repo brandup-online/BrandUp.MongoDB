@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <IsPackable>false</IsPackable>
-    <NoWarn>$(NoWarn);CS0618</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -20,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\BrandUp.MongoDB.Testing.Mongo2Go\BrandUp.MongoDB.Testing.Mongo2Go.csproj" />
+    <ProjectReference Include="..\..\src\BrandUp.MongoDB.Testing.EphemeralMongo\BrandUp.MongoDB.Testing.EphemeralMongo.csproj" />
   </ItemGroup>
 
 </Project>
