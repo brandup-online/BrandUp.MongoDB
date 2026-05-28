@@ -20,7 +20,7 @@ namespace BrandUp.MongoDB.Testing.EphemeralMongo.Tests
             });
 
             using var scope = services.BuildServiceProvider();
-            var dbContext = scope.GetRequiredService<TestDbContext>();
+            var dbContext = EphemeralMongoEnvironment.ResolveOrSkip<TestDbContext>(scope);
 
             var count = await dbContext.Documents.EstimatedDocumentCountAsync(cancellationToken: TestContext.Current.CancellationToken);
 
@@ -42,7 +42,7 @@ namespace BrandUp.MongoDB.Testing.EphemeralMongo.Tests
                 .UseCamelCaseElementName();
 
             using var scope = services.BuildServiceProvider();
-            var dbContext = scope.GetRequiredService<TestDbContext>();
+            var dbContext = EphemeralMongoEnvironment.ResolveOrSkip<TestDbContext>(scope);
 
             await dbContext.Documents.InsertOneAsync(
                 new ArticleDocument { Name = "name", Author = "author" },

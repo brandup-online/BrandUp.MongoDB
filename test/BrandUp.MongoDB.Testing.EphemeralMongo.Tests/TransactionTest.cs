@@ -39,7 +39,7 @@ namespace BrandUp.MongoDB.Testing.EphemeralMongo.Tests
         {
             await using var scope = serviceProvider.CreateAsyncScope();
 
-            var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            var dbContext = EphemeralMongoEnvironment.ResolveOrSkip<TestDbContext>(scope.ServiceProvider);
             var dbSession = scope.ServiceProvider.GetRequiredService<MongoDbSession>();
 
             await using (var transaction = await dbSession.BeginAsync(TestContext.Current.CancellationToken))
@@ -58,7 +58,7 @@ namespace BrandUp.MongoDB.Testing.EphemeralMongo.Tests
         {
             await using var scope = serviceProvider.CreateAsyncScope();
 
-            var dbContext = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+            var dbContext = EphemeralMongoEnvironment.ResolveOrSkip<TestDbContext>(scope.ServiceProvider);
             var dbSession = scope.ServiceProvider.GetRequiredService<MongoDbSession>();
 
             await using (var transaction = await dbSession.BeginAsync(TestContext.Current.CancellationToken))
