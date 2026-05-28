@@ -13,6 +13,8 @@ namespace BrandUp.MongoDB.Testing
         readonly BsonDocument clusterTime;
         readonly BsonTimestamp operationTime;
         readonly ClientSessionOptions options;
+        readonly FakeServerSession serverSession = new();
+        readonly ICoreSessionHandle wrappedCoreSession = NoCoreSession.NewHandle();
         private bool isInTransaction = false;
 
         public IMongoClient Client => client;
@@ -21,8 +23,8 @@ namespace BrandUp.MongoDB.Testing
         public bool IsInTransaction => isInTransaction;
         public BsonTimestamp OperationTime => operationTime;
         public ClientSessionOptions Options => options;
-        public IServerSession ServerSession => throw new NotImplementedException();
-        public ICoreSessionHandle WrappedCoreSession => throw new NotImplementedException();
+        public IServerSession ServerSession => serverSession;
+        public ICoreSessionHandle WrappedCoreSession => wrappedCoreSession;
 
         public FakeClientSessionHandle(FakeMongoClient client)
         {
@@ -65,6 +67,8 @@ namespace BrandUp.MongoDB.Testing
 
         public void Dispose()
         {
+            wrappedCoreSession.Dispose();
+            serverSession.Dispose();
         }
 
         public IClientSessionHandle Fork()
@@ -94,6 +98,28 @@ namespace BrandUp.MongoDB.Testing
                 throw new InvalidOperationException();
 
             return callbackAsync(this, cancellationToken);
+        }
+
+        sealed class FakeServerSession : IServerSession
+        {
+            long transactionNumber;
+
+            public BsonDocument Id { get; } = new BsonDocument("id", new BsonBinaryData(Guid.NewGuid().ToByteArray(), BsonBinarySubType.UuidStandard));
+            public DateTime? LastUsedAt { get; private set; }
+
+            public long AdvanceTransactionNumber()
+            {
+                return ++transactionNumber;
+            }
+
+            public void WasUsed()
+            {
+                LastUsedAt = DateTime.UtcNow;
+            }
+
+            public void Dispose()
+            {
+            }
         }
     }
 }

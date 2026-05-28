@@ -138,6 +138,45 @@ namespace BrandUp.MongoDB.Tests
             Assert.NotNull(dbContext);
         }
 
+        [Fact]
+        public void AddExtension_ResolvesSameInstanceAsContext()
+        {
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton<TestService>()
+                .AddFakeMongoDb();
+
+            services
+                .AddMongoDbContext<TestDbContext>(options => options.DatabaseName = "Test")
+                .AddExtension<TestDbContext, IWorkerDbContext>();
+
+            using var scope = services.BuildServiceProvider();
+
+            var dbContext = scope.GetRequiredService<TestDbContext>();
+            var extension = scope.GetRequiredService<IWorkerDbContext>();
+
+            Assert.Same(dbContext, extension);
+        }
+
+        [Fact]
+        public void ConfigureMongoDbContext_LayersOptionsOverAddMongoDbContext()
+        {
+            var services = new ServiceCollection();
+
+            services
+                .AddSingleton<TestService>()
+                .AddFakeMongoDb();
+
+            services.AddMongoDbContext<TestDbContext>(options => options.DatabaseName = "First");
+            services.ConfigureMongoDbContext<TestDbContext>(options => options.DatabaseName = "Second");
+
+            using var scope = services.BuildServiceProvider();
+            var dbContext = scope.GetRequiredService<TestDbContext>();
+
+            Assert.Equal("Second", dbContext.Database.DatabaseNamespace.DatabaseName);
+        }
+
         #endregion
     }
 }

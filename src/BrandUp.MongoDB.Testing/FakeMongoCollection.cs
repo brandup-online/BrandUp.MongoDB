@@ -18,6 +18,7 @@ namespace BrandUp.MongoDB.Testing
         readonly Dictionary<BsonValue, int> docIds = new Dictionary<BsonValue, int>();
         readonly List<TDocument> docObjects = new List<TDocument>();
         readonly FakeMongoIndexManager<TDocument> indexManager;
+        readonly FakeMongoSearchIndexManager searchIndexManager = new();
 
         public FakeMongoCollection(FakeMongoDatabase database, string name, MongoCollectionSettings settings)
         {
@@ -34,7 +35,7 @@ namespace BrandUp.MongoDB.Testing
         public IMongoIndexManager<TDocument> Indexes => indexManager;
         public MongoCollectionSettings Settings { get; }
 
-        public IMongoSearchIndexManager SearchIndexes => throw new NotImplementedException();
+        public IMongoSearchIndexManager SearchIndexes => searchIndexManager;
 
         public IQueryable<TDocument> GetDocuemntsQueryable()
         {
@@ -165,19 +166,19 @@ namespace BrandUp.MongoDB.Testing
 
         public IAsyncCursor<TResult> Aggregate<TResult>(PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
         public IAsyncCursor<TResult> Aggregate<TResult>(IClientSessionHandle session, PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
         public Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
         public Task<IAsyncCursor<TResult>> AggregateAsync<TResult>(IClientSessionHandle session, PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
 
         #endregion
@@ -186,19 +187,74 @@ namespace BrandUp.MongoDB.Testing
 
         public BulkWriteResult<TDocument> BulkWrite(IEnumerable<WriteModel<TDocument>> requests, BulkWriteOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return BulkWrite(null!, requests, options, cancellationToken);
         }
         public BulkWriteResult<TDocument> BulkWrite(IClientSessionHandle session, IEnumerable<WriteModel<TDocument>> requests, BulkWriteOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            ArgumentNullException.ThrowIfNull(requests);
+
+            var processed = requests.ToList();
+            long matchedCount = 0, deletedCount = 0, insertedCount = 0, modifiedCount = 0;
+
+            foreach (var request in processed)
+            {
+                switch (request)
+                {
+                    case InsertOneModel<TDocument> insert:
+                        InsertOne(session, insert.Document, null, cancellationToken);
+                        insertedCount++;
+                        break;
+                    case DeleteOneModel<TDocument> deleteOne:
+                        deletedCount += DeleteOne(session, deleteOne.Filter, null, cancellationToken).DeletedCount;
+                        break;
+                    case DeleteManyModel<TDocument> deleteMany:
+                        deletedCount += DeleteMany(session, deleteMany.Filter, null, cancellationToken).DeletedCount;
+                        break;
+                    case UpdateOneModel<TDocument> updateOne:
+                    {
+                        var result = UpdateOne(session, updateOne.Filter, updateOne.Update, null, cancellationToken);
+                        matchedCount += result.MatchedCount;
+                        modifiedCount += result.ModifiedCount;
+                        break;
+                    }
+                    case UpdateManyModel<TDocument> updateMany:
+                    {
+                        var result = UpdateMany(session, updateMany.Filter, updateMany.Update, null, cancellationToken);
+                        matchedCount += result.MatchedCount;
+                        modifiedCount += result.ModifiedCount;
+                        break;
+                    }
+                    case ReplaceOneModel<TDocument> replace:
+                    {
+                        var result = ReplaceOne(session, replace.Filter, replace.Replacement, (ReplaceOptions?)null, cancellationToken);
+                        if (result.IsAcknowledged)
+                        {
+                            matchedCount += result.MatchedCount;
+                            modifiedCount += result.ModifiedCount;
+                        }
+                        break;
+                    }
+                    default:
+                        throw new NotSupportedException($"Write model {request.GetType().Name} is not supported by the in-memory fake.");
+                }
+            }
+
+            return new BulkWriteResult<TDocument>.Acknowledged(
+                processed.Count,
+                matchedCount,
+                deletedCount,
+                insertedCount,
+                modifiedCount,
+                processed,
+                Enumerable.Empty<BulkWriteUpsert>());
         }
         public Task<BulkWriteResult<TDocument>> BulkWriteAsync(IEnumerable<WriteModel<TDocument>> requests, BulkWriteOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return BulkWriteAsync(null!, requests, options, cancellationToken);
         }
         public Task<BulkWriteResult<TDocument>> BulkWriteAsync(IClientSessionHandle session, IEnumerable<WriteModel<TDocument>> requests, BulkWriteOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(BulkWrite(session, requests, options, cancellationToken));
         }
 
         #endregion
@@ -323,19 +379,19 @@ namespace BrandUp.MongoDB.Testing
 
         public IAsyncCursor<TField> Distinct<TField>(FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
         }
         public IAsyncCursor<TField> Distinct<TField>(IClientSessionHandle session, FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
         }
         public Task<IAsyncCursor<TField>> DistinctAsync<TField>(FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
         }
         public Task<IAsyncCursor<TField>> DistinctAsync<TField>(IClientSessionHandle session, FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
         }
 
         #endregion
@@ -390,7 +446,7 @@ namespace BrandUp.MongoDB.Testing
 
         public TProjection FindOneAndDelete<TProjection>(FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return FindOneAndDelete(null!, filter, options, cancellationToken);
         }
         public TProjection FindOneAndDelete<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
@@ -402,7 +458,12 @@ namespace BrandUp.MongoDB.Testing
 
             var doc = filtered[0];
             DeleteDocuments(filtered);
-            return (TProjection)(object)doc!;
+            return AsProjection<TProjection>(doc);
+        }
+
+        static TProjection AsProjection<TProjection>(TDocument document)
+        {
+            return (TProjection)(object)document!;
         }
         public Task<TProjection> FindOneAndDeleteAsync<TProjection>(FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
@@ -419,19 +480,41 @@ namespace BrandUp.MongoDB.Testing
 
         public TProjection FindOneAndReplace<TProjection>(FilterDefinition<TDocument> filter, TDocument replacement, FindOneAndReplaceOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return FindOneAndReplace(null!, filter, replacement, options, cancellationToken);
         }
         public TProjection FindOneAndReplace<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, FindOneAndReplaceOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            var filtered = Filter(filter);
+            if (filtered.Count > 1)
+                throw new InvalidOperationException();
+
+            var returnDocument = options?.ReturnDocument ?? ReturnDocument.Before;
+
+            if (filtered.Count == 0)
+            {
+                if (options?.IsUpsert == true)
+                {
+                    InsertDocument(replacement);
+                    return returnDocument == ReturnDocument.After ? AsProjection<TProjection>(replacement) : default!;
+                }
+
+                return default!;
+            }
+
+            var before = filtered[0];
+            ReplaceOneInternal(session, filter, replacement, cancellationToken);
+
+            return returnDocument == ReturnDocument.After
+                ? AsProjection<TProjection>(replacement)
+                : AsProjection<TProjection>(before);
         }
         public Task<TProjection> FindOneAndReplaceAsync<TProjection>(FilterDefinition<TDocument> filter, TDocument replacement, FindOneAndReplaceOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return FindOneAndReplaceAsync(null!, filter, replacement, options, cancellationToken);
         }
         public Task<TProjection> FindOneAndReplaceAsync<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, FindOneAndReplaceOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(FindOneAndReplace(session, filter, replacement, options, cancellationToken));
         }
 
         #endregion
@@ -440,19 +523,36 @@ namespace BrandUp.MongoDB.Testing
 
         public TProjection FindOneAndUpdate<TProjection>(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, FindOneAndUpdateOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return FindOneAndUpdate(null!, filter, update, options, cancellationToken);
         }
         public TProjection FindOneAndUpdate<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, FindOneAndUpdateOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            ArgumentNullException.ThrowIfNull(update);
+
+            var filtered = Filter(filter);
+            if (filtered.Count > 1)
+                throw new InvalidOperationException();
+            if (filtered.Count == 0)
+                return default!;
+
+            var returnDocument = options?.ReturnDocument ?? ReturnDocument.Before;
+
+            var before = filtered[0];
+            var docIndex = docObjects.IndexOf(before);
+            UpdateDocuments(filtered, update);
+            var after = docObjects[docIndex];
+
+            return returnDocument == ReturnDocument.After
+                ? AsProjection<TProjection>(after)
+                : AsProjection<TProjection>(before);
         }
         public Task<TProjection> FindOneAndUpdateAsync<TProjection>(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, FindOneAndUpdateOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return FindOneAndUpdateAsync(null!, filter, update, options, cancellationToken);
         }
         public Task<TProjection> FindOneAndUpdateAsync<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, FindOneAndUpdateOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            return Task.FromResult(FindOneAndUpdate(session, filter, update, options, cancellationToken));
         }
 
         #endregion
@@ -516,29 +616,29 @@ namespace BrandUp.MongoDB.Testing
         [Obsolete]
         public IAsyncCursor<TResult> MapReduce<TResult>(BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("MapReduce is not supported by the in-memory fake.");
         }
         [Obsolete]
         public IAsyncCursor<TResult> MapReduce<TResult>(IClientSessionHandle session, BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("MapReduce is not supported by the in-memory fake.");
         }
         [Obsolete]
         public Task<IAsyncCursor<TResult>> MapReduceAsync<TResult>(BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("MapReduce is not supported by the in-memory fake.");
         }
         [Obsolete]
         public Task<IAsyncCursor<TResult>> MapReduceAsync<TResult>(IClientSessionHandle session, BsonJavaScript map, BsonJavaScript reduce, MapReduceOptions<TDocument, TResult>? options = null, CancellationToken cancellationToken = default)
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("MapReduce is not supported by the in-memory fake.");
         }
 
         #endregion
 
         public IFilteredMongoCollection<TDerivedDocument> OfType<TDerivedDocument>() where TDerivedDocument : TDocument
         {
-            throw new System.NotImplementedException();
+            throw new NotSupportedException("OfType filtered collections are not supported by the in-memory fake.");
         }
 
         #region ReplaceOne members
@@ -675,22 +775,22 @@ namespace BrandUp.MongoDB.Testing
 
         public IChangeStreamCursor<TResult> Watch<TResult>(PipelineDefinition<ChangeStreamDocument<TDocument>, TResult> pipeline, ChangeStreamOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Change streams are not supported by the in-memory fake.");
         }
 
         public IChangeStreamCursor<TResult> Watch<TResult>(IClientSessionHandle session, PipelineDefinition<ChangeStreamDocument<TDocument>, TResult> pipeline, ChangeStreamOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Change streams are not supported by the in-memory fake.");
         }
 
         public Task<IChangeStreamCursor<TResult>> WatchAsync<TResult>(PipelineDefinition<ChangeStreamDocument<TDocument>, TResult> pipeline, ChangeStreamOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Change streams are not supported by the in-memory fake.");
         }
 
         public Task<IChangeStreamCursor<TResult>> WatchAsync<TResult>(IClientSessionHandle session, PipelineDefinition<ChangeStreamDocument<TDocument>, TResult> pipeline, ChangeStreamOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Change streams are not supported by the in-memory fake.");
         }
 
         #endregion
@@ -710,42 +810,42 @@ namespace BrandUp.MongoDB.Testing
 
         public void AggregateToCollection<TResult>(PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
 
         public void AggregateToCollection<TResult>(IClientSessionHandle session, PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
 
         public Task AggregateToCollectionAsync<TResult>(PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
 
         public Task AggregateToCollectionAsync<TResult>(IClientSessionHandle session, PipelineDefinition<TDocument, TResult> pipeline, AggregateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
 
         public IAsyncCursor<TItem> DistinctMany<TItem>(FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
         }
 
         public IAsyncCursor<TItem> DistinctMany<TItem>(IClientSessionHandle session, FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
         }
 
         public Task<IAsyncCursor<TItem>> DistinctManyAsync<TItem>(FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
         }
 
         public Task<IAsyncCursor<TItem>> DistinctManyAsync<TItem>(IClientSessionHandle session, FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotImplementedException();
+            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
         }
     }
 }

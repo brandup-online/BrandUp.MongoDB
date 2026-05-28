@@ -143,6 +143,151 @@ namespace BrandUp.MongoDB.Testing.Tests
             Assert.Single(result);
         }
 
+        [Fact]
+        public void FindOneAndDelete_ReturnsDeletedDocument()
+        {
+            var doc = new Document { Id = Guid.NewGuid(), Name = "test" };
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
+
+            var deleted = collection.FindOneAndDelete(it => it.Id == doc.Id, cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.NotNull(deleted);
+            Assert.Equal(doc.Id, deleted.Id);
+            Assert.Equal(0, collection.EstimatedDocumentCount(cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public void FindOneAndReplace_ReturnsBeforeByDefault()
+        {
+            var doc = new Document { Id = Guid.NewGuid(), Name = "before" };
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
+
+            var returned = collection.FindOneAndReplace(it => it.Id == doc.Id, new Document { Id = doc.Id, Name = "after" }, cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Equal("before", returned.Name);
+            var current = collection.Find(it => it.Id == doc.Id).Single(TestContext.Current.CancellationToken);
+            Assert.Equal("after", current.Name);
+        }
+
+        [Fact]
+        public void FindOneAndReplace_ReturnAfter()
+        {
+            var doc = new Document { Id = Guid.NewGuid(), Name = "before" };
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
+
+            var returned = collection.FindOneAndReplace(
+                it => it.Id == doc.Id,
+                new Document { Id = doc.Id, Name = "after" },
+                new FindOneAndReplaceOptions<Document, Document> { ReturnDocument = ReturnDocument.After },
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal("after", returned.Name);
+        }
+
+        [Fact]
+        public void FindOneAndUpdate_ReturnsBeforeByDefault()
+        {
+            var doc = new Document { Id = Guid.NewGuid(), Name = "v1" };
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
+
+            var returned = collection.FindOneAndUpdate(
+                it => it.Id == doc.Id,
+                Builders<Document>.Update.Set(it => it.Name, "v2"),
+                cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Equal("v1", returned.Name);
+            var current = collection.Find(it => it.Id == doc.Id).Single(TestContext.Current.CancellationToken);
+            Assert.Equal("v2", current.Name);
+        }
+
+        [Fact]
+        public void FindOneAndUpdate_ReturnAfter()
+        {
+            var doc = new Document { Id = Guid.NewGuid(), Name = "v1" };
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
+
+            var returned = collection.FindOneAndUpdate(
+                it => it.Id == doc.Id,
+                Builders<Document>.Update.Set(it => it.Name, "v2"),
+                new FindOneAndUpdateOptions<Document, Document> { ReturnDocument = ReturnDocument.After },
+                TestContext.Current.CancellationToken);
+
+            Assert.Equal("v2", returned.Name);
+        }
+
+        [Fact]
+        public void BulkWrite_RoutesInsertAndUpdate()
+        {
+            var existing = new Document { Id = Guid.NewGuid(), Name = "old" };
+            collection.InsertOne(existing, cancellationToken: TestContext.Current.CancellationToken);
+
+            var result = collection.BulkWrite([
+                new InsertOneModel<Document>(new Document { Id = Guid.NewGuid(), Name = "new" }),
+                new UpdateOneModel<Document>(
+                    new ExpressionFilterDefinition<Document>(it => it.Id == existing.Id),
+                    Builders<Document>.Update.Set(it => it.Name, "updated"))
+            ], cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Equal(1, result.InsertedCount);
+            Assert.Equal(1, result.MatchedCount);
+            Assert.Equal(1, result.ModifiedCount);
+            Assert.Equal(2, collection.EstimatedDocumentCount(cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public void BulkWrite_RoutesDelete()
+        {
+            var doc = new Document { Id = Guid.NewGuid(), Name = "x" };
+            collection.InsertOne(doc, cancellationToken: TestContext.Current.CancellationToken);
+
+            var result = collection.BulkWrite([
+                new DeleteOneModel<Document>(new ExpressionFilterDefinition<Document>(it => it.Id == doc.Id))
+            ], cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Equal(1, result.DeletedCount);
+            Assert.Equal(0, collection.EstimatedDocumentCount(cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public void OfType_NotSupported()
+        {
+            Assert.Throws<NotSupportedException>(() => collection.OfType<Document>());
+        }
+
+        [Fact]
+        public void InsertOne_DuplicateId_Throws()
+        {
+            var id = Guid.NewGuid();
+            collection.InsertOne(new Document { Id = id, Name = "a" }, cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Throws<InvalidOperationException>(() =>
+                collection.InsertOne(new Document { Id = id, Name = "b" }, cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public void UpdateOne_UnsupportedOperator_Throws()
+        {
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "a" }, cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Throws<NotSupportedException>(() =>
+                collection.UpdateOne(it => it.Name == "a", Builders<Document>.Update.Unset(it => it.Name), cancellationToken: TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public void ReplaceOne_NoMatch_Unacknowledged()
+        {
+            var result = collection.ReplaceOne(it => it.Name == "missing", new Document { Id = Guid.NewGuid(), Name = "x" }, cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.False(result.IsAcknowledged);
+        }
+
+        [Fact]
+        public void FindSync_NonExpressionFilter_NotSupported()
+        {
+            Assert.Throws<NotSupportedException>(() =>
+                collection.FindSync<Document>(Builders<Document>.Filter.Eq(it => it.Name, "x"), cancellationToken: TestContext.Current.CancellationToken));
+        }
+
         public class Document
         {
             [BsonId]

@@ -46,7 +46,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public IEnumerable<string> CreateMany(IClientSessionHandle session, IEnumerable<CreateIndexModel<TDocument>> models, CancellationToken cancellationToken = default)
         {
-            return CreateMany(session, null!, cancellationToken);
+            return CreateMany(session, models, null!, cancellationToken);
         }
         public IEnumerable<string> CreateMany(IClientSessionHandle session, IEnumerable<CreateIndexModel<TDocument>> models, CreateManyIndexesOptions options, CancellationToken cancellationToken = default)
         {
@@ -159,8 +159,10 @@ namespace BrandUp.MongoDB.Testing
         }
         public void DropOne(IClientSessionHandle session, string name, DropIndexOptions options, CancellationToken cancellationToken = default)
         {
-            if (!indexes.Remove(name))
-                throw new InvalidOperationException();
+            ArgumentNullException.ThrowIfNull(name);
+
+            if (!indexes.Remove(name.ToLower()))
+                throw new InvalidOperationException($"Index \"{name}\" does not exist.");
         }
 
         public Task DropOneAsync(string name, CancellationToken cancellationToken = default)

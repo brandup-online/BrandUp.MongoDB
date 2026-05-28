@@ -44,5 +44,23 @@ namespace BrandUp.MongoDB.Testing.Tests
                 Assert.False(session.IsInTransaction);
             }
         }
+
+        [Fact]
+        public void ServerSession_IsExposedAndStable()
+        {
+            using var session = client.StartSession(cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.NotNull(session.ServerSession);
+            Assert.NotNull(session.ServerSession.Id);
+            Assert.Same(session.ServerSession, session.ServerSession);
+        }
+
+        [Fact]
+        public void WrappedCoreSession_IsExposed()
+        {
+            using var session = client.StartSession(cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.NotNull(session.WrappedCoreSession);
+        }
     }
 }

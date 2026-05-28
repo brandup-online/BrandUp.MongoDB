@@ -1,11 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<ItemGroup>
-		<PackageReference Include="MongoDB.Driver" Version="3.8.1" />
+		<PackageReference Include="MongoDB.Driver" Version="3.9.0" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\BrandUp.MongoDB\BrandUp.MongoDB.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.300" />
 	</ItemGroup>
 
 </Project>

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using Xunit;
@@ -61,6 +62,41 @@ namespace BrandUp.MongoDB.Testing.Tests
 
             var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
             Assert.Empty(indexes);
+        }
+
+        [Fact]
+        public void DropOne_MixedCaseName_RemovesIndex()
+        {
+            collection.Indexes.CreateOne(
+                new CreateIndexModel<Document>(
+                    Builders<Document>.IndexKeys.Ascending(it => it.Name),
+                    new CreateIndexOptions { Name = "MyIndex" }),
+                cancellationToken: TestContext.Current.CancellationToken);
+
+            collection.Indexes.DropOne("MyIndex", TestContext.Current.CancellationToken);
+
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
+            Assert.Empty(indexes);
+        }
+
+        [Fact]
+        public void DropOne_Missing_Throws()
+        {
+            Assert.Throws<InvalidOperationException>(() =>
+                collection.Indexes.DropOne("missing", TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public async Task CreateManyAsync_WithSession_DoesNotRecurse()
+        {
+            using var session = collection.Database.Client.StartSession(cancellationToken: TestContext.Current.CancellationToken);
+
+            var names = await collection.Indexes.CreateManyAsync(session, [
+                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)),
+                new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Header))
+            ], TestContext.Current.CancellationToken);
+
+            Assert.Equal(2, names.Count());
         }
 
         public class Document

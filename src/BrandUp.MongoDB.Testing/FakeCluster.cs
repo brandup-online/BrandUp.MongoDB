@@ -1,16 +1,30 @@
-﻿using System;
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Bindings;
 using MongoDB.Driver.Core.Clusters;
 using MongoDB.Driver.Core.Configuration;
+using MongoDB.Driver.Core.Servers;
 
 namespace BrandUp.MongoDB.Testing
 {
     public class FakeCluster : ICluster
     {
-        public ClusterId ClusterId => throw new NotImplementedException();
-        public ClusterDescription Description => throw new NotImplementedException();
-        public ClusterSettings Settings => throw new NotImplementedException();
+        readonly ClusterId clusterId = new();
+        readonly ClusterSettings settings = new();
+        readonly ClusterDescription description;
+
+        public FakeCluster()
+        {
+            description = new ClusterDescription(
+                clusterId,
+                directConnection: false,
+                dnsMonitorException: null,
+                ClusterType.Standalone,
+                Enumerable.Empty<ServerDescription>());
+        }
+
+        public ClusterId ClusterId => clusterId;
+        public ClusterDescription Description => description;
+        public ClusterSettings Settings => settings;
 
         public event EventHandler<ClusterDescriptionChangedEventArgs>? DescriptionChanged;
 
@@ -21,7 +35,7 @@ namespace BrandUp.MongoDB.Testing
 
         public ICoreServerSession AcquireServerSession()
         {
-            throw new NotImplementedException();
+            return NoCoreSession.Instance.ServerSession;
         }
 
         public void Dispose()
@@ -34,7 +48,7 @@ namespace BrandUp.MongoDB.Testing
 
         public ICoreSessionHandle StartSession(CoreSessionOptions? options = null)
         {
-            throw new NotImplementedException();
+            return NoCoreSession.NewHandle();
         }
     }
 }
