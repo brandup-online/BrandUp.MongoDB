@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using MongoDB.Driver;
 
 namespace BrandUp.MongoDB.Testing
@@ -21,14 +17,14 @@ namespace BrandUp.MongoDB.Testing
         {
             ArgumentNullException.ThrowIfNull(items);
 
-            this.items = new List<T>(items);
+            this.items = [.. items];
         }
 
         public FakeAsyncCursor(IEnumerable<T> items)
         {
             ArgumentNullException.ThrowIfNull(items);
 
-            this.items = new List<T>(items);
+            this.items = [.. items];
         }
 
         /// <summary>

@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using MongoDB.Driver;
 
 namespace BrandUp.MongoDB
@@ -42,7 +39,7 @@ namespace BrandUp.MongoDB
             if (clientSession.IsInTransaction)
             {
                 if (transaction == null)
-                    throw new InvalidOperationException("Session is in a transaction that was not started through this MongoDbSession.");
+                    return Task.FromResult<ITransaction>(new MongoDbTransaction(this));
 
                 return Task.FromResult<ITransaction>(new MongoDbTransaction(transaction));
             }

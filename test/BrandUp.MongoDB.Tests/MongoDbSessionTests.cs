@@ -73,14 +73,18 @@ namespace BrandUp.MongoDB.Tests
         }
 
         [Fact]
-        public async Task BeginAsync_SessionInTransactionWithoutOwner_Throws()
+        public async Task BeginAsync_SessionAlreadyInTransaction_AdoptsItWithoutNullReference()
         {
             using var session = CreateSession();
 
             // Start a transaction directly on the underlying handle, bypassing the session's own tracking.
             session.Current.StartTransaction();
 
-            await Assert.ThrowsAsync<InvalidOperationException>(() => session.BeginAsync(TestContext.Current.CancellationToken));
+            // BeginAsync must not dereference a null owner here; it adopts the active transaction instead.
+            await using var transaction = await session.BeginAsync(TestContext.Current.CancellationToken);
+
+            Assert.NotNull(transaction);
+            Assert.True(session.Current.IsInTransaction);
         }
     }
 }
