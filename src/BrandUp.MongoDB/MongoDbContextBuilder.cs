@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Runtime.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using MongoDB.Bson.Serialization.Attributes;
@@ -173,7 +174,17 @@ namespace BrandUp.MongoDB
                 throw new ArgumentException($"Document type {documentType.AssemblyQualifiedName} not contain {nameof(MongoCollectionAttribute)} attribute.");
 
             var collectionMetadataType = MongoCollectionMetadataType.MakeGenericType(documentType);
-            var collectionMetadata = (IMongoDbCollectionMetadata)Activator.CreateInstance(collectionMetadataType, true)!;
+            IMongoDbCollectionMetadata collectionMetadata;
+            try
+            {
+                collectionMetadata = (IMongoDbCollectionMetadata)Activator.CreateInstance(collectionMetadataType, true)!;
+            }
+            catch (TargetInvocationException ex) when (ex.InnerException != null)
+            {
+                // Surface configuration errors (e.g. an invalid MongoCollectionAttribute) without the reflection wrapper.
+                ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                throw; // unreachable
+            }
 
             var index = collections.Count;
             collections.Add(collectionMetadata);

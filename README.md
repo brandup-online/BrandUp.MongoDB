@@ -91,10 +91,77 @@ await transaction.CommitAsync(ct);
 // If CommitAsync is not reached (exception, early return), DisposeAsync aborts the transaction.
 ```
 
-## Per-collection configuration
+## Collection parameters
 
-Tweak `MongoCollectionSettings` or `CreateCollectionOptions` for a specific document type
-without subclassing the metadata:
+Collection parameters can be declared right where the collection is registered — on the
+document — instead of being scattered across application start-up. Two complementary ways:
+
+### 1. On the `[MongoCollection]` attribute (constants)
+
+```csharp
+[MongoCollection(CollectionName = "events",
+    Capped = true, CappedMaxSize = 16 * 1024 * 1024, CappedMaxDocuments = 100_000,
+    ChangeStreamPreAndPostImages = true)]
+public class EventDocument { /* ... */ }
+```
+
+### 2. On the document via `IMongoCollectionConfiguration` (full, programmatic)
+
+Implement the interface to express anything the attribute can't — notably document
+validation. Declaring it on a *base* document applies the configuration to every derived
+document mapped to a collection.
+
+```csharp
+[MongoCollection(CollectionName = "people")]
+public class PersonDocument : IMongoCollectionConfiguration
+{
+    [BsonElement("name")] public string? Name { get; set; }
+
+    public static void Configure(MongoCollectionConfigurationBuilder builder)
+    {
+        builder.Capped(maxSize: 16 * 1024 * 1024);
+        builder.Validation(
+            new BsonDocument("$jsonSchema", new BsonDocument
+            {
+                { "bsonType", "object" },
+                { "required", new BsonArray { "name" } }
+            }),
+            DocumentValidationLevel.Strict,
+            DocumentValidationAction.Error);
+        builder.ChangeStreamPreAndPostImages();
+    }
+}
+```
+
+Only parameters MongoDB can change on an existing collection **quickly** (metadata-only,
+no scan or rewrite) are exposed: document validation, capped size/max, and change-stream
+pre/post images. Immutable options (collation, the capped flag itself, clustered index)
+and indexes — including TTL — are deliberately out of scope.
+
+### Updating already-existing collections
+
+By default parameters are applied only when a collection is **created**. Enable
+`UpdateExistingCollections` to also reconcile declared parameters onto an existing
+collection (via the `collMod` command) when the context initializes. Only fields that
+actually differ are sent, so it is a no-op when nothing changed.
+
+```csharp
+services.AddMongoDbContext<WebSiteDbContext>(options =>
+{
+    options.DatabaseName = "WebSite";
+    options.UpdateExistingCollections = true;
+});
+```
+
+> Disabled by default to avoid unexpected schema changes against a live database. Note that
+> MongoDB rounds a capped collection's size up to a multiple of 256 bytes — declare sizes on
+> that boundary to avoid a harmless `collMod` resize on every start-up.
+
+### Escape hatch — raw driver options from DI
+
+For environment-specific tweaks you can still reach the raw driver options. These hooks run
+*after* the declared parameters, so they win on conflict. `configureCreate` only fires when
+the collection is about to be created.
 
 ```csharp
 services
@@ -103,9 +170,6 @@ services
         configureSettings: s => s.ReadPreference = ReadPreference.SecondaryPreferred,
         configureCreate:   c => c.Capped = false);
 ```
-
-The `configureCreate` hook only fires the first time the context boots against a fresh
-database — when the collection does not yet exist and is about to be created.
 
 ## Testing
 

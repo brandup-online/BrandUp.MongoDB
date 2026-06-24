@@ -43,7 +43,7 @@ namespace BrandUp.MongoDB
             var i = 0;
             foreach (var collection in collections)
             {
-                collection.Initialize(this);
+                collection.Initialize(this, options.UpdateExistingCollections);
 
                 this.collections.Add(collection);
                 collectionTypes.Add(collection.DocumentType, i);

@@ -11,6 +11,15 @@ namespace BrandUp.MongoDB
 
         /// <summary>Optional <see cref="MongoDatabaseSettings"/> passed when resolving the database handle.</summary>
         public MongoDatabaseSettings? DatabaseSettings { get; set; }
+
+        /// <summary>
+        /// When true, collection parameters declared via <see cref="MongoCollectionAttribute"/> or
+        /// <see cref="IMongoCollectionConfiguration"/> are reconciled onto already-existing collections during
+        /// initialization (via the <c>collMod</c> command). Only fast, metadata-only changes are applied —
+        /// document validation, capped size, and change-stream pre/post images; immutable options and indexes
+        /// are never touched. Disabled by default to avoid unexpected schema changes against a live database.
+        /// </summary>
+        public bool UpdateExistingCollections { get; set; }
     }
 
     /// <summary>Validates that <see cref="MongoDbContextOptions.DatabaseName"/> is set.</summary>
