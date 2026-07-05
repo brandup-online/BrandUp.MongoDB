@@ -17,6 +17,19 @@ namespace BrandUp.MongoDB.Testing.EphemeralMongo.Tests.Models
         public string? Message { get; set; }
     }
 
+    public class CompressedEventsDbContext : MongoDbContext
+    {
+        public IMongoCollection<CompressedEventDocument> Events => GetCollection<CompressedEventDocument>();
+    }
+
+    [MongoCollection(CollectionName = "compressed_events", BlockCompressor = MongoBlockCompressor.Zstd)]
+    public class CompressedEventDocument
+    {
+        [BsonId, BsonRepresentation(BsonType.ObjectId)]
+        public ObjectId Id { get; set; }
+        public string? Message { get; set; }
+    }
+
     public class ValidatedPeopleDbContext : MongoDbContext
     {
         public IMongoCollection<ValidatedPersonDocument> People => GetCollection<ValidatedPersonDocument>();

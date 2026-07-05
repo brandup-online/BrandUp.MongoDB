@@ -26,6 +26,26 @@ namespace BrandUp.MongoDB.Testing.EphemeralMongo.Tests
         }
 
         [Fact]
+        public void BlockCompressor_FromAttribute_SetsWiredTigerConfigString()
+        {
+            var services = new ServiceCollection();
+            services.AddEphemeralMongoDb();
+            services.AddMongoDbContext<CompressedEventsDbContext>(o => o.DatabaseName = "Test");
+
+            using var scope = services.BuildServiceProvider();
+            var dbContext = EphemeralMongoEnvironment.ResolveOrSkip<CompressedEventsDbContext>(scope);
+
+            var options = GetCollectionOptions(dbContext.Database, "compressed_events");
+
+            var configString = options
+                .GetValue("storageEngine", new BsonDocument()).AsBsonDocument
+                .GetValue("wiredTiger", new BsonDocument()).AsBsonDocument
+                .GetValue("configString", BsonString.Empty).AsString;
+
+            Assert.Contains("block_compressor=zstd", configString);
+        }
+
+        [Fact]
         public async Task Validation_FromInterface_RejectsInvalidDocument()
         {
             var services = new ServiceCollection();

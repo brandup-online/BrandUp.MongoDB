@@ -31,5 +31,12 @@ namespace BrandUp.MongoDB
 
         /// <summary>Records change-stream pre/post images for the collection. Updatable on an existing collection.</summary>
         public bool ChangeStreamPreAndPostImages { get; set; }
+
+        /// <summary>
+        /// WiredTiger block compressor for the collection (e.g. <see cref="MongoBlockCompressor.Zstd"/>). Applied only
+        /// at creation via the storage engine config string; this is an immutable option and is never changed on an
+        /// existing collection. <see cref="MongoBlockCompressor.Default"/> leaves the server default in place.
+        /// </summary>
+        public MongoBlockCompressor BlockCompressor { get; set; } = MongoBlockCompressor.Default;
     }
 }

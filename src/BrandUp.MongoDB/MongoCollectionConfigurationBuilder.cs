@@ -8,10 +8,11 @@ namespace BrandUp.MongoDB
     /// <see cref="MongoCollectionAttribute"/> and <see cref="IMongoCollectionConfiguration.Configure"/>, then
     /// applied both when the collection is created and (optionally) reconciled onto an existing collection.
     /// <para>
-    /// Only parameters that MongoDB can change on an existing collection quickly (metadata-only, no full scan or
-    /// rewrite) are exposed here: document validation, capped size/max, and change-stream pre/post images.
-    /// Immutable options (collation, the capped flag itself, clustered index, storage engine) and indexes
-    /// (including TTL) are intentionally out of scope.
+    /// Most parameters exposed here are ones MongoDB can change on an existing collection quickly (metadata-only,
+    /// no full scan or rewrite): document validation, capped size/max, and change-stream pre/post images. A few
+    /// create-only options that are still expressible as simple constants are also exposed — the capped flag and
+    /// the WiredTiger block compressor — and are applied only when the collection is created, never reconciled.
+    /// Remaining immutable options (collation, clustered index) and indexes (including TTL) are out of scope.
     /// </para>
     /// </summary>
     public sealed class MongoCollectionConfigurationBuilder
@@ -36,6 +37,9 @@ namespace BrandUp.MongoDB
 
         /// <summary>Whether change-stream pre/post images are recorded. Updatable on an existing collection.</summary>
         public bool? ChangeStreamPreAndPostImagesEnabled { get; private set; }
+
+        /// <summary>WiredTiger block compressor. Applied only at creation; an immutable option that is never reconciled.</summary>
+        public MongoBlockCompressor? BlockCompressor { get; private set; }
 
         /// <summary>
         /// Marks the collection as capped. The capped flag is applied only when the collection is created
@@ -92,6 +96,18 @@ namespace BrandUp.MongoDB
         public MongoCollectionConfigurationBuilder ChangeStreamPreAndPostImages(bool enabled = true)
         {
             ChangeStreamPreAndPostImagesEnabled = enabled;
+
+            return this;
+        }
+
+        /// <summary>
+        /// Sets the WiredTiger block compressor used when the collection is created. This is an immutable,
+        /// create-only storage-engine option and is never reconciled onto an existing collection.
+        /// <see cref="MongoBlockCompressor.Default"/> clears any declared compressor and leaves the server default.
+        /// </summary>
+        public MongoCollectionConfigurationBuilder WiredTigerBlockCompressor(MongoBlockCompressor compressor)
+        {
+            BlockCompressor = compressor == MongoBlockCompressor.Default ? null : compressor;
 
             return this;
         }

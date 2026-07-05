@@ -69,6 +69,9 @@ namespace BrandUp.MongoDB
             if (attribute.ChangeStreamPreAndPostImages)
                 Configuration.ChangeStreamPreAndPostImages(true);
 
+            if (attribute.BlockCompressor != MongoBlockCompressor.Default)
+                Configuration.WiredTigerBlockCompressor(attribute.BlockCompressor);
+
             // Option 2: full, programmatic configuration declared on the document type (or its base document).
             MongoCollectionConfigurationInvoker.Apply(DocumentType, Configuration);
         }
@@ -119,8 +122,21 @@ namespace BrandUp.MongoDB
             if (Configuration.ChangeStreamPreAndPostImagesEnabled.HasValue)
                 options.ChangeStreamPreAndPostImagesOptions = new ChangeStreamPreAndPostImagesOptions { Enabled = Configuration.ChangeStreamPreAndPostImagesEnabled.Value };
 
+            if (Configuration.BlockCompressor is { } compressor && compressor != MongoBlockCompressor.Default)
+                options.StorageEngine = new BsonDocument("wiredTiger",
+                    new BsonDocument("configString", $"block_compressor={MapBlockCompressor(compressor)}"));
+
             return options;
         }
+
+        static string MapBlockCompressor(MongoBlockCompressor compressor) => compressor switch
+        {
+            MongoBlockCompressor.None => "none",
+            MongoBlockCompressor.Snappy => "snappy",
+            MongoBlockCompressor.Zlib => "zlib",
+            MongoBlockCompressor.Zstd => "zstd",
+            _ => throw new ArgumentOutOfRangeException(nameof(compressor), compressor, null)
+        };
 
         /// <summary>
         /// Applies the declared parameters that MongoDB can change quickly on an existing collection via

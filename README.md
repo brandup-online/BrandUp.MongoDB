@@ -101,7 +101,8 @@ document — instead of being scattered across application start-up. Two complem
 ```csharp
 [MongoCollection(CollectionName = "events",
     Capped = true, CappedMaxSize = 16 * 1024 * 1024, CappedMaxDocuments = 100_000,
-    ChangeStreamPreAndPostImages = true)]
+    ChangeStreamPreAndPostImages = true,
+    BlockCompressor = MongoBlockCompressor.Zstd)]
 public class EventDocument { /* ... */ }
 ```
 
@@ -133,10 +134,12 @@ public class PersonDocument : IMongoCollectionConfiguration
 }
 ```
 
-Only parameters MongoDB can change on an existing collection **quickly** (metadata-only,
-no scan or rewrite) are exposed: document validation, capped size/max, and change-stream
-pre/post images. Immutable options (collation, the capped flag itself, clustered index)
-and indexes — including TTL — are deliberately out of scope.
+Most exposed parameters are ones MongoDB can change on an existing collection **quickly**
+(metadata-only, no scan or rewrite): document validation, capped size/max, and change-stream
+pre/post images. A couple of create-only options that are still plain constants are also
+supported — the capped flag and the WiredTiger `BlockCompressor` — and are applied only when
+the collection is created, never reconciled. Remaining immutable options (collation, clustered
+index) and indexes — including TTL — are deliberately out of scope.
 
 ### Updating already-existing collections
 
