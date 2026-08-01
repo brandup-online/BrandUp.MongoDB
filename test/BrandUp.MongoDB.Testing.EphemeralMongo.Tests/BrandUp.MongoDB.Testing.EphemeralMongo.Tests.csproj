@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\BrandUp.MongoDB.Testing.EphemeralMongo\BrandUp.MongoDB.Testing.EphemeralMongo.csproj" />
+    <ProjectReference Include="..\..\src\BrandUp.MongoDB.Testing\BrandUp.MongoDB.Testing.csproj" />
   </ItemGroup>
 
 </Project>

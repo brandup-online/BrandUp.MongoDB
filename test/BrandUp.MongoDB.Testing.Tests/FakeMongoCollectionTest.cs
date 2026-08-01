@@ -255,13 +255,14 @@ namespace BrandUp.MongoDB.Testing.Tests
         }
 
         [Fact]
-        public void InsertOne_DuplicateId_Throws()
+        public void InsertOne_DuplicateId_ThrowsDuplicateKey()
         {
             var id = Guid.NewGuid();
             collection.InsertOne(new Document { Id = id, Name = "a" }, cancellationToken: TestContext.Current.CancellationToken);
 
-            Assert.Throws<InvalidOperationException>(() =>
+            var exception = Assert.Throws<MongoWriteException>(() =>
                 collection.InsertOne(new Document { Id = id, Name = "b" }, cancellationToken: TestContext.Current.CancellationToken));
+            Assert.Equal(ServerErrorCategory.DuplicateKey, exception.WriteError.Category);
         }
 
         [Fact]
@@ -270,22 +271,29 @@ namespace BrandUp.MongoDB.Testing.Tests
             collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "a" }, cancellationToken: TestContext.Current.CancellationToken);
 
             Assert.Throws<NotSupportedException>(() =>
-                collection.UpdateOne(it => it.Name == "a", Builders<Document>.Update.Unset(it => it.Name), cancellationToken: TestContext.Current.CancellationToken));
+                collection.UpdateOne(it => it.Name == "a", Builders<Document>.Update.BitwiseAnd("Counter", 1), cancellationToken: TestContext.Current.CancellationToken));
         }
 
         [Fact]
-        public void ReplaceOne_NoMatch_Unacknowledged()
+        public void ReplaceOne_NoMatch_AcknowledgedZero()
         {
             var result = collection.ReplaceOne(it => it.Name == "missing", new Document { Id = Guid.NewGuid(), Name = "x" }, cancellationToken: TestContext.Current.CancellationToken);
 
-            Assert.False(result.IsAcknowledged);
+            Assert.True(result.IsAcknowledged);
+            Assert.Equal(0, result.MatchedCount);
+            Assert.Equal(0, result.ModifiedCount);
         }
 
         [Fact]
-        public void FindSync_NonExpressionFilter_NotSupported()
+        public void FindSync_RenderedFilter_Matches()
         {
-            Assert.Throws<NotSupportedException>(() =>
-                collection.FindSync<Document>(Builders<Document>.Filter.Eq(it => it.Name, "x"), cancellationToken: TestContext.Current.CancellationToken));
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "x" }, cancellationToken: TestContext.Current.CancellationToken);
+            collection.InsertOne(new Document { Id = Guid.NewGuid(), Name = "y" }, cancellationToken: TestContext.Current.CancellationToken);
+
+            var result = collection.FindSync<Document>(Builders<Document>.Filter.Eq(it => it.Name, "x"), cancellationToken: TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
+
+            Assert.Single(result);
+            Assert.Equal("x", result[0].Name);
         }
 
         public class Document

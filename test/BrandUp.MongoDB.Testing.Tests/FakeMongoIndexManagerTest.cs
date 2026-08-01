@@ -23,8 +23,36 @@ namespace BrandUp.MongoDB.Testing.Tests
             var name = collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)), cancellationToken: TestContext.Current.CancellationToken);
 
             var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
-            Assert.Single(indexes);
-            Assert.Equal("index0", name);
+            // The implicit _id index is always reported, like on a real server.
+            Assert.Equal(2, indexes.Count);
+            // Default name follows the server convention.
+            Assert.Equal("Name_1", name);
+        }
+
+        [Fact]
+        public void CreateOne_UnnamedSameKeysTwice_IsNoOp()
+        {
+            collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)), cancellationToken: TestContext.Current.CancellationToken);
+            collection.Indexes.CreateOne(new CreateIndexModel<Document>(Builders<Document>.IndexKeys.Ascending(it => it.Name)), cancellationToken: TestContext.Current.CancellationToken);
+
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
+            Assert.Single(indexes, it => it["name"] == "Name_1");
+            Assert.Equal(2, indexes.Count);
+        }
+
+        [Fact]
+        public void List_AlwaysContainsIdIndex()
+        {
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
+
+            Assert.Single(indexes, it => it["name"] == "_id_");
+        }
+
+        [Fact]
+        public void DropOne_IdIndex_Throws()
+        {
+            Assert.Throws<InvalidOperationException>(() =>
+                collection.Indexes.DropOne("_id_", TestContext.Current.CancellationToken));
         }
 
         [Fact]
@@ -36,7 +64,7 @@ namespace BrandUp.MongoDB.Testing.Tests
             ], TestContext.Current.CancellationToken);
 
             var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
-            Assert.Equal(2, indexes.Count);
+            Assert.Equal(3, indexes.Count);
         }
 
         [Fact]
@@ -49,8 +77,10 @@ namespace BrandUp.MongoDB.Testing.Tests
 
             collection.Indexes.DropAll(TestContext.Current.CancellationToken);
 
+            // DropAll keeps the implicit _id index, like on a real server.
             var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
-            Assert.Empty(indexes);
+            Assert.Single(indexes, it => it["name"] == "_id_");
+            Assert.Single(indexes);
         }
 
         [Fact]
@@ -61,7 +91,7 @@ namespace BrandUp.MongoDB.Testing.Tests
             collection.Indexes.DropOne(name, TestContext.Current.CancellationToken);
 
             var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
-            Assert.Empty(indexes);
+            Assert.Single(indexes, it => it["name"] == "_id_");
         }
 
         [Fact]
@@ -76,7 +106,7 @@ namespace BrandUp.MongoDB.Testing.Tests
             collection.Indexes.DropOne("MyIndex", TestContext.Current.CancellationToken);
 
             var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
-            Assert.Empty(indexes);
+            Assert.Single(indexes, it => it["name"] == "_id_");
         }
 
         [Fact]
@@ -84,6 +114,33 @@ namespace BrandUp.MongoDB.Testing.Tests
         {
             Assert.Throws<InvalidOperationException>(() =>
                 collection.Indexes.DropOne("missing", TestContext.Current.CancellationToken));
+        }
+
+        [Fact]
+        public void CreateOne_SameNameAndKeys_IsNoOp()
+        {
+            var model = new CreateIndexModel<Document>(
+                Builders<Document>.IndexKeys.Ascending(it => it.Name),
+                new CreateIndexOptions { Name = "name_idx" });
+
+            collection.Indexes.CreateOne(model, cancellationToken: TestContext.Current.CancellationToken);
+            collection.Indexes.CreateOne(model, cancellationToken: TestContext.Current.CancellationToken);
+
+            var indexes = collection.Indexes.List(TestContext.Current.CancellationToken).ToList(TestContext.Current.CancellationToken);
+            Assert.Single(indexes, it => it["name"] == "name_idx");
+        }
+
+        [Fact]
+        public void CreateOne_SameNameDifferentKeys_Throws()
+        {
+            collection.Indexes.CreateOne(new CreateIndexModel<Document>(
+                Builders<Document>.IndexKeys.Ascending(it => it.Name),
+                new CreateIndexOptions { Name = "idx" }), cancellationToken: TestContext.Current.CancellationToken);
+
+            Assert.Throws<InvalidOperationException>(() =>
+                collection.Indexes.CreateOne(new CreateIndexModel<Document>(
+                    Builders<Document>.IndexKeys.Ascending(it => it.Header),
+                    new CreateIndexOptions { Name = "idx" }), cancellationToken: TestContext.Current.CancellationToken));
         }
 
         [Fact]

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BrandUp.MongoDB.Testing.Internals;
 using MongoDB.Bson;
 using MongoDB.Bson.IO;
 using MongoDB.Bson.Serialization;
@@ -44,120 +45,398 @@ namespace BrandUp.MongoDB.Testing
 
         #region Helpers
 
-        private List<TDocument> Filter(FilterDefinition<TDocument> filter)
+        RenderArgs<TDocument> RenderArgs => new RenderArgs<TDocument>(DocumentSerializer, Settings.SerializerRegistry);
+
+        /// <summary>
+        /// Resolves a filter to the indices of matching documents (in insertion order).
+        /// Expression filters are compiled and evaluated against the CLR objects; any other
+        /// filter is rendered to BSON and evaluated by the matcher.
+        /// </summary>
+        List<int> FindMatchingIndices(FilterDefinition<TDocument> filter)
         {
-            var ef = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-            return docObjects.Where(ef.Expression.Compile()).ToList();
+            ArgumentNullException.ThrowIfNull(filter);
+
+            if (filter is ExpressionFilterDefinition<TDocument> expressionFilter)
+            {
+                var predicate = expressionFilter.Expression.Compile();
+                var matched = new List<int>();
+                for (var i = 0; i < docObjects.Count; i++)
+                {
+                    if (predicate(docObjects[i]))
+                        matched.Add(i);
+                }
+                return matched;
+            }
+
+            var filterDoc = filter.Render(RenderArgs);
+            if (filterDoc.ElementCount == 0)
+                return Enumerable.Range(0, docs.Count).ToList();
+
+            var result = new List<int>();
+            for (var i = 0; i < docs.Count; i++)
+            {
+                if (BsonFilterMatcher.Matches(filterDoc, docs[i]))
+                    result.Add(i);
+            }
+            return result;
         }
-        private void InsertDocument(TDocument document)
+
+        void SortIndices(List<int> indices, SortDefinition<TDocument>? sort)
+        {
+            if (sort == null)
+                return;
+
+            var sortDoc = sort.Render(RenderArgs);
+            if (sortDoc.ElementCount == 0)
+                return;
+
+            var comparer = new BsonSortComparer(sortDoc);
+            indices.Sort((a, b) => comparer.Compare(docs[a], docs[b]));
+        }
+
+        BsonDocument SerializeDocument(TDocument document)
+        {
+            var bsonDocument = new BsonDocument();
+            using (var bsonWriter = new BsonDocumentWriter(bsonDocument))
+            {
+                var context = BsonSerializationContext.CreateRoot(bsonWriter);
+                DocumentSerializer.Serialize(context, new BsonSerializationArgs { SerializeIdFirst = true }, document);
+            }
+            return bsonDocument;
+        }
+
+        TDocument DeserializeDocument(BsonDocument document)
+        {
+            using var bsonReader = new BsonDocumentReader(document);
+            var context = BsonDeserializationContext.CreateRoot(bsonReader);
+            return DocumentSerializer.Deserialize(context);
+        }
+
+        void RecordUndo(IClientSessionHandle? session, Action undo)
+        {
+            if (session is FakeClientSessionHandle fakeSession)
+                fakeSession.RecordUndo(undo);
+        }
+
+        void RemoveById(BsonValue id)
+        {
+            if (!docIds.TryGetValue(id, out var index))
+                return;
+
+            docs.RemoveAt(index);
+            docObjects.RemoveAt(index);
+            ReindexIds();
+        }
+
+        void ReindexIds()
+        {
+            docIds.Clear();
+            for (var i = 0; i < docs.Count; i++)
+                docIds.Add(GetDocumentIdValue(docs[i]), i);
+        }
+
+        void EnsureUniqueIndexes(BsonDocument candidate, int? selfIndex)
+        {
+            foreach (var index in indexManager.UniqueIndexes)
+            {
+                if (!index.Participates(candidate))
+                    continue;
+
+                var key = index.ExtractKey(candidate);
+                for (var i = 0; i < docs.Count; i++)
+                {
+                    if (i == selfIndex)
+                        continue;
+
+                    var other = docs[i];
+                    if (!index.Participates(other))
+                        continue;
+
+                    if (index.KeysEqual(key, index.ExtractKey(other)))
+                        throw DriverExceptionFactory.CreateDuplicateKeyException(CollectionNamespace, index.Name, new BsonArray(key));
+                }
+            }
+        }
+
+        BsonValue InsertDocument(IClientSessionHandle? session, TDocument document)
         {
             if (document == null)
                 throw new ArgumentNullException(nameof(document));
 
-            var bsonDocument = new BsonDocument();
-            using (var bsonReader = new BsonDocumentWriter(bsonDocument))
-            {
-                var bsonSerializationContext = BsonSerializationContext.CreateRoot(bsonReader);
-                DocumentSerializer.Serialize(bsonSerializationContext, new BsonSerializationArgs { SerializeIdFirst = true }, document);
-            }
+            var bsonDocument = SerializeDocument(document);
 
             var id = GetDocumentIdValue(bsonDocument);
             if (docIds.ContainsKey(id))
-                throw new InvalidOperationException($"Document by id {id} already exists.");
+                throw DriverExceptionFactory.CreateDuplicateKeyException(CollectionNamespace, "_id_", id);
 
-            var index = docIds.Count;
+            EnsureUniqueIndexes(bsonDocument, null);
+
+            var index = docs.Count;
             docIds.Add(id, index);
             docs.Add(bsonDocument);
             docObjects.Add(document);
+
+            RecordUndo(session, () => RemoveById(id));
+
+            return id;
         }
-        private UpdateResult UpdateDocuments(IEnumerable<TDocument> documents, UpdateDefinition<TDocument> update)
+
+        /// <summary>
+        /// Creates a new document for an upsert: deserializes the composed BSON, assigns a
+        /// generated id when the source has none (mirroring driver-side id generation) and inserts.
+        /// </summary>
+        BsonValue UpsertInsert(IClientSessionHandle? session, BsonDocument source, out TDocument inserted)
         {
-            var matchedCount = 0;
-            var modifiedCount = 0;
-            var bsobUpdate = update.Render(new RenderArgs<TDocument>(DocumentSerializer, Settings.SerializerRegistry)).AsBsonDocument;
+            var hadId = source.Contains("_id");
+            inserted = DeserializeDocument(source);
 
-            foreach (var docObject in documents)
+            if (!hadId)
+                TryAssignGeneratedId(inserted);
+
+            return InsertDocument(session, inserted);
+        }
+
+        void TryAssignGeneratedId(TDocument document)
+        {
+            if (document is BsonDocument bsonDocument)
             {
-                var docIndex = docObjects.IndexOf(docObject);
-                if (docIndex == -1)
-                    throw new InvalidOperationException();
-                var doc = docs[docIndex];
-                var docId = GetDocumentIdValue(doc);
-
-                var updatedDoc = doc.DeepClone().AsBsonDocument;
-                foreach (var updateElement in bsobUpdate)
-                {
-                    var operationName = updateElement.Name;
-                    switch (operationName)
-                    {
-                        case "$set":
-                            {
-                                var setDoc = updateElement.Value.AsBsonDocument;
-                                updatedDoc = updatedDoc.Merge(setDoc, true);
-                                modifiedCount += setDoc.ElementCount;
-                                break;
-                            }
-                        default:
-                            throw new NotSupportedException($"Not supported update operation {operationName}.");
-                    }
-                }
-
-                var updatedId = GetDocumentIdValue(updatedDoc);
-
-                using (var bsonReader = new BsonDocumentReader(updatedDoc))
-                {
-                    var bsonDeserializationContext = BsonDeserializationContext.CreateRoot(bsonReader);
-                    var updatedDocObject = DocumentSerializer.Deserialize(bsonDeserializationContext);
-
-                    docObjects[docIndex] = updatedDocObject;
-                }
-
-                if (updatedId != docId)
-                {
-                    if (!docIds.Remove(docId))
-                        throw new InvalidOperationException();
-                    docIds.Add(updatedId, docIndex);
-                }
-
-                matchedCount++;
+                if (!bsonDocument.Contains("_id"))
+                    bsonDocument.InsertAt(0, new BsonElement("_id", ObjectId.GenerateNewId()));
+                return;
             }
 
-            return new UpdateResult.Acknowledged(matchedCount, modifiedCount, null!);
-        }
-        private DeleteResult DeleteDocuments(IEnumerable<TDocument> documents)
-        {
-            var deletedCount = 0;
-
-            foreach (var docObject in documents)
+            try
             {
-                var docIndex = docObjects.IndexOf(docObject);
-                if (docIndex == -1)
-                    throw new InvalidOperationException();
+                var classMap = BsonClassMap.LookupClassMap(typeof(TDocument));
+                var idMap = classMap.IdMemberMap;
+                if (idMap?.IdGenerator is { } generator)
+                {
+                    var currentId = idMap.Getter(document!);
+                    if (generator.IsEmpty(currentId))
+                        idMap.Setter(document!, generator.GenerateId(this, document!));
+                }
+            }
+            catch
+            {
+                // Types without a class map keep whatever id the deserialized document carries.
+            }
+        }
 
+        static void EnsureNoArrayFilters(IEnumerable<ArrayFilterDefinition>? arrayFilters)
+        {
+            if (arrayFilters != null && arrayFilters.Any())
+                throw new NotSupportedException("Array filters are not supported by the in-memory fake.");
+        }
+
+        static void EnsureNoCollation(Collation? collation)
+        {
+            if (collation != null)
+                throw new NotSupportedException("Query-level collations are not supported by the in-memory fake; collations are only honoured on unique indexes.");
+        }
+
+        /// <summary>Applies the update engine, reporting its failures as write errors the way a server does.</summary>
+        static void ApplyUpdateEngine(BsonDocument updateDoc, BsonDocument target, bool insertMode)
+        {
+            try
+            {
+                BsonUpdateEngine.Apply(updateDoc, target, insertMode);
+            }
+            catch (InvalidOperationException exception)
+            {
+                throw DriverExceptionFactory.CreateUpdateErrorException(exception.Message);
+            }
+        }
+
+        UpdateResult ApplyUpdate(IClientSessionHandle? session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions? options, bool updateManyDocuments, SortDefinition<TDocument>? sort = null)
+        {
+            ArgumentNullException.ThrowIfNull(filter);
+            ArgumentNullException.ThrowIfNull(update);
+
+            EnsureNoArrayFilters(options?.ArrayFilters);
+            EnsureNoCollation(options?.Collation);
+
+            var renderedUpdate = update.Render(RenderArgs);
+            if (renderedUpdate is not BsonDocument updateDoc)
+                throw new NotSupportedException("Aggregation-pipeline updates are not supported by the in-memory fake.");
+
+            var indices = FindMatchingIndices(filter);
+
+            if (indices.Count == 0)
+            {
+                if (options?.IsUpsert == true)
+                {
+                    var seed = BsonUpdateEngine.BuildUpsertSeed(RenderFilterForUpsert(filter));
+                    ApplyUpdateEngine(updateDoc, seed, insertMode: true);
+                    var upsertedId = UpsertInsert(session, seed, out _);
+                    return new UpdateResult.Acknowledged(0, 0, upsertedId);
+                }
+
+                return new UpdateResult.Acknowledged(0, 0, null);
+            }
+
+            if (!updateManyDocuments && indices.Count > 1)
+            {
+                SortIndices(indices, sort);
+                indices = [indices[0]];
+            }
+
+            long matchedCount = 0, modifiedCount = 0;
+            foreach (var docIndex in indices)
+            {
+                matchedCount++;
+                if (UpdateDocumentAt(session, docIndex, updateDoc))
+                    modifiedCount++;
+            }
+
+            return new UpdateResult.Acknowledged(matchedCount, modifiedCount, null);
+        }
+
+        /// <summary>Applies a rendered update to the document at the given index. Returns true when the document changed.</summary>
+        bool UpdateDocumentAt(IClientSessionHandle? session, int docIndex, BsonDocument updateDoc)
+        {
+            var doc = docs[docIndex];
+            var docId = GetDocumentIdValue(doc);
+
+            var updatedDoc = doc.DeepClone().AsBsonDocument;
+            ApplyUpdateEngine(updateDoc, updatedDoc, insertMode: false);
+
+            if (updatedDoc.Equals(doc))
+                return false;
+
+            var updatedId = GetDocumentIdValue(updatedDoc);
+            if (updatedId != docId && docIds.ContainsKey(updatedId))
+                throw DriverExceptionFactory.CreateDuplicateKeyException(CollectionNamespace, "_id_", updatedId);
+
+            EnsureUniqueIndexes(updatedDoc, docIndex);
+
+            var updatedObject = DeserializeDocument(updatedDoc);
+
+            if (updatedId != docId)
+            {
+                if (!docIds.Remove(docId))
+                    throw new InvalidOperationException();
+                docIds.Add(updatedId, docIndex);
+            }
+
+            var previousObject = docObjects[docIndex];
+
+            docs[docIndex] = updatedDoc;
+            docObjects[docIndex] = updatedObject;
+
+            RecordUndo(session, () =>
+            {
+                if (!docIds.TryGetValue(updatedId, out var currentIndex))
+                    return;
+
+                docs[currentIndex] = doc;
+                docObjects[currentIndex] = previousObject;
+                if (updatedId != docId)
+                {
+                    docIds.Remove(updatedId);
+                    docIds[docId] = currentIndex;
+                }
+            });
+
+            return true;
+        }
+
+        BsonDocument RenderFilterForUpsert(FilterDefinition<TDocument> filter)
+        {
+            try
+            {
+                return filter.Render(RenderArgs);
+            }
+            catch (Exception exception) when (filter is ExpressionFilterDefinition<TDocument>)
+            {
+                throw new NotSupportedException("Cannot build an upsert document from this expression filter.", exception);
+            }
+        }
+
+        DeleteResult DeleteDocuments(IClientSessionHandle? session, List<int> indices)
+        {
+            var removed = new List<(BsonValue Id, BsonDocument Doc, TDocument Obj)>();
+
+            foreach (var docIndex in indices.OrderByDescending(it => it))
+            {
                 var doc = docs[docIndex];
                 var docId = GetDocumentIdValue(doc);
 
                 if (!docIds.Remove(docId))
                     throw new InvalidOperationException();
+                removed.Add((docId, doc, docObjects[docIndex]));
                 docs.RemoveAt(docIndex);
                 docObjects.RemoveAt(docIndex);
-
-                deletedCount++;
             }
 
-            return new DeleteResult.Acknowledged(deletedCount);
+            ReindexIds();
+
+            if (removed.Count > 0)
+            {
+                RecordUndo(session, () =>
+                {
+                    foreach (var (id, doc, obj) in removed)
+                    {
+                        if (docIds.ContainsKey(id))
+                            continue;
+
+                        docIds.Add(id, docs.Count);
+                        docs.Add(doc);
+                        docObjects.Add(obj);
+                    }
+                });
+            }
+
+            return new DeleteResult.Acknowledged(indices.Count);
         }
-        private static BsonValue GetDocumentIdValue(BsonDocument document)
+
+        static BsonValue GetDocumentIdValue(BsonDocument document)
         {
             if (!document.TryGetValue("_id", out BsonValue idValue))
                 throw new InvalidOperationException("Not found id value in bson document.");
             return idValue;
         }
-        private static object GetDocumentId(BsonDocument document)
-        {
-            var idValue = GetDocumentIdValue(document);
 
-            return BsonTypeMapper.MapToDotNetValue(idValue);
+        static TProjection AsProjection<TProjection>(TDocument document)
+        {
+            return (TProjection)(object)document!;
+        }
+
+        static TField DeserializeValue<TField>(IBsonSerializer<TField> serializer, BsonValue value)
+        {
+            var wrapper = new BsonDocument("v", value);
+            using var reader = new BsonDocumentReader(wrapper);
+            reader.ReadStartDocument();
+            reader.ReadName();
+            var context = BsonDeserializationContext.CreateRoot(reader);
+            var result = serializer.Deserialize(context);
+            reader.ReadEndDocument();
+            return result;
+        }
+
+        IAsyncCursor<TField> DistinctValues<TField>(IBsonSerializer<TField> valueSerializer, string fieldName, FilterDefinition<TDocument> filter)
+        {
+            var indices = FindMatchingIndices(filter);
+            var seen = new List<BsonValue>();
+            var results = new List<TField>();
+
+            foreach (var docIndex in indices)
+            {
+                var terminals = BsonValueHelper.ResolvePath(docs[docIndex], fieldName, out _);
+                foreach (var terminal in terminals)
+                {
+                    var values = terminal is BsonArray array ? array.AsEnumerable() : [terminal];
+                    foreach (var value in values)
+                    {
+                        if (seen.Any(it => BsonValueHelper.ValuesEqual(it, value)))
+                            continue;
+
+                        seen.Add(value);
+                        results.Add(DeserializeValue(valueSerializer, value));
+                    }
+                }
+            }
+
+            return new FakeAsyncCursor<TField>(results);
         }
 
         #endregion
@@ -193,60 +472,99 @@ namespace BrandUp.MongoDB.Testing
         {
             ArgumentNullException.ThrowIfNull(requests);
 
-            var processed = requests.ToList();
-            long matchedCount = 0, deletedCount = 0, insertedCount = 0, modifiedCount = 0;
+            var models = requests.ToList();
+            var isOrdered = options?.IsOrdered ?? true;
 
-            foreach (var request in processed)
+            long matchedCount = 0, deletedCount = 0, insertedCount = 0, modifiedCount = 0;
+            var upserts = new List<BulkWriteUpsert>();
+            var errors = new List<BulkWriteError>();
+            var processed = new List<WriteModel<TDocument>>();
+            var stoppedAt = models.Count;
+
+            for (var i = 0; i < models.Count; i++)
             {
-                switch (request)
+                var request = models[i];
+                try
                 {
-                    case InsertOneModel<TDocument> insert:
-                        InsertOne(session, insert.Document, null, cancellationToken);
-                        insertedCount++;
-                        break;
-                    case DeleteOneModel<TDocument> deleteOne:
-                        deletedCount += DeleteOne(session, deleteOne.Filter, null, cancellationToken).DeletedCount;
-                        break;
-                    case DeleteManyModel<TDocument> deleteMany:
-                        deletedCount += DeleteMany(session, deleteMany.Filter, null, cancellationToken).DeletedCount;
-                        break;
-                    case UpdateOneModel<TDocument> updateOne:
+                    switch (request)
                     {
-                        var result = UpdateOne(session, updateOne.Filter, updateOne.Update, null, cancellationToken);
-                        matchedCount += result.MatchedCount;
-                        modifiedCount += result.ModifiedCount;
+                        case InsertOneModel<TDocument> insert:
+                            InsertDocument(session, insert.Document);
+                            insertedCount++;
+                            break;
+                        case DeleteOneModel<TDocument> deleteOne:
+                            EnsureNoCollation(deleteOne.Collation);
+                            deletedCount += DeleteOne(session, deleteOne.Filter, null, cancellationToken).DeletedCount;
+                            break;
+                        case DeleteManyModel<TDocument> deleteMany:
+                            EnsureNoCollation(deleteMany.Collation);
+                            deletedCount += DeleteMany(session, deleteMany.Filter, null, cancellationToken).DeletedCount;
+                            break;
+                        case UpdateOneModel<TDocument> updateOne:
+                            {
+                                EnsureNoArrayFilters(updateOne.ArrayFilters);
+                                EnsureNoCollation(updateOne.Collation);
+                                var result = ApplyUpdate(session, updateOne.Filter, updateOne.Update, new UpdateOptions { IsUpsert = updateOne.IsUpsert }, updateManyDocuments: false, updateOne.Sort);
+                                matchedCount += result.MatchedCount;
+                                modifiedCount += result.ModifiedCount;
+                                if (result.UpsertedId != null)
+                                    upserts.Add(DriverExceptionFactory.CreateBulkWriteUpsert(i, result.UpsertedId));
+                                break;
+                            }
+                        case UpdateManyModel<TDocument> updateMany:
+                            {
+                                EnsureNoArrayFilters(updateMany.ArrayFilters);
+                                EnsureNoCollation(updateMany.Collation);
+                                var result = ApplyUpdate(session, updateMany.Filter, updateMany.Update, new UpdateOptions { IsUpsert = updateMany.IsUpsert }, updateManyDocuments: true);
+                                matchedCount += result.MatchedCount;
+                                modifiedCount += result.ModifiedCount;
+                                if (result.UpsertedId != null)
+                                    upserts.Add(DriverExceptionFactory.CreateBulkWriteUpsert(i, result.UpsertedId));
+                                break;
+                            }
+                        case ReplaceOneModel<TDocument> replace:
+                            {
+                                var result = ReplaceOneInternal(session, replace.Filter, replace.Replacement, replace.IsUpsert, replace.Collation);
+                                if (result.IsAcknowledged)
+                                {
+                                    matchedCount += result.MatchedCount;
+                                    modifiedCount += result.ModifiedCount;
+                                    if (result.UpsertedId != null)
+                                        upserts.Add(DriverExceptionFactory.CreateBulkWriteUpsert(i, result.UpsertedId));
+                                }
+                                break;
+                            }
+                        default:
+                            throw new NotSupportedException($"Write model {request.GetType().Name} is not supported by the in-memory fake.");
+                    }
+
+                    processed.Add(request);
+                }
+                catch (MongoWriteException writeException) when (writeException.WriteError != null)
+                {
+                    errors.Add(DriverExceptionFactory.CreateBulkError(i, writeException.WriteError));
+
+                    if (isOrdered)
+                    {
+                        stoppedAt = i + 1;
                         break;
                     }
-                    case UpdateManyModel<TDocument> updateMany:
-                    {
-                        var result = UpdateMany(session, updateMany.Filter, updateMany.Update, null, cancellationToken);
-                        matchedCount += result.MatchedCount;
-                        modifiedCount += result.ModifiedCount;
-                        break;
-                    }
-                    case ReplaceOneModel<TDocument> replace:
-                    {
-                        var result = ReplaceOne(session, replace.Filter, replace.Replacement, (ReplaceOptions?)null, cancellationToken);
-                        if (result.IsAcknowledged)
-                        {
-                            matchedCount += result.MatchedCount;
-                            modifiedCount += result.ModifiedCount;
-                        }
-                        break;
-                    }
-                    default:
-                        throw new NotSupportedException($"Write model {request.GetType().Name} is not supported by the in-memory fake.");
                 }
             }
 
-            return new BulkWriteResult<TDocument>.Acknowledged(
-                processed.Count,
+            var bulkResult = new BulkWriteResult<TDocument>.Acknowledged(
+                models.Count,
                 matchedCount,
                 deletedCount,
                 insertedCount,
                 modifiedCount,
                 processed,
-                Enumerable.Empty<BulkWriteUpsert>());
+                upserts);
+
+            if (errors.Count > 0)
+                throw DriverExceptionFactory.CreateBulkWriteException(bulkResult, errors, models.Skip(stoppedAt));
+
+            return bulkResult;
         }
         public Task<BulkWriteResult<TDocument>> BulkWriteAsync(IEnumerable<WriteModel<TDocument>> requests, BulkWriteOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -291,15 +609,16 @@ namespace BrandUp.MongoDB.Testing
         }
         public long CountDocuments(IClientSessionHandle session, FilterDefinition<TDocument> filter, CountOptions? options = null, CancellationToken cancellationToken = default)
         {
-            if (filter == null)
-                throw new ArgumentNullException(nameof(filter));
+            EnsureNoCollation(options?.Collation);
 
-            if (filter is ExpressionFilterDefinition<TDocument> exprFilter)
-                return docObjects.Count(exprFilter.Expression.Compile());
-            else if (filter == FilterDefinition<TDocument>.Empty)
-                return docObjects.Count;
-            else
-                throw new NotSupportedException();
+            long count = FindMatchingIndices(filter).Count;
+
+            if (options?.Skip != null)
+                count = Math.Max(0, count - options.Skip.Value);
+            if (options?.Limit != null)
+                count = Math.Min(count, options.Limit.Value);
+
+            return count;
         }
         public Task<long> CountDocumentsAsync(FilterDefinition<TDocument> filter, CountOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -324,8 +643,9 @@ namespace BrandUp.MongoDB.Testing
         }
         public DeleteResult DeleteMany(IClientSessionHandle session, FilterDefinition<TDocument> filter, DeleteOptions? options = null, CancellationToken cancellationToken = default)
         {
-            var filteredDocs = Filter(filter);
-            return DeleteDocuments(filteredDocs);
+            EnsureNoCollation(options?.Collation);
+
+            return DeleteDocuments(session, FindMatchingIndices(filter));
         }
         public Task<DeleteResult> DeleteManyAsync(FilterDefinition<TDocument> filter, CancellationToken cancellationToken = default)
         {
@@ -354,11 +674,13 @@ namespace BrandUp.MongoDB.Testing
         }
         public DeleteResult DeleteOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, DeleteOptions? options = null, CancellationToken cancellationToken = default)
         {
-            var filteredDocs = Filter(filter);
-            if (filteredDocs.Count > 1)
-                throw new InvalidOperationException();
+            EnsureNoCollation(options?.Collation);
 
-            return DeleteDocuments(filteredDocs);
+            var indices = FindMatchingIndices(filter);
+            if (indices.Count > 1)
+                indices = [indices[0]];
+
+            return DeleteDocuments(session, indices);
         }
         public Task<DeleteResult> DeleteOneAsync(FilterDefinition<TDocument> filter, CancellationToken cancellationToken = default)
         {
@@ -379,19 +701,25 @@ namespace BrandUp.MongoDB.Testing
 
         public IAsyncCursor<TField> Distinct<TField>(FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
+            return Distinct(null!, field, filter, options, cancellationToken);
         }
         public IAsyncCursor<TField> Distinct<TField>(IClientSessionHandle session, FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
+            ArgumentNullException.ThrowIfNull(field);
+            ArgumentNullException.ThrowIfNull(filter);
+            EnsureNoCollation(options?.Collation);
+
+            var rendered = field.Render(RenderArgs);
+            var valueSerializer = rendered.FieldSerializer ?? BsonSerializer.LookupSerializer<TField>();
+            return DistinctValues(valueSerializer, rendered.FieldName, filter);
         }
         public Task<IAsyncCursor<TField>> DistinctAsync<TField>(FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
+            return Task.FromResult(Distinct(field, filter, options, cancellationToken));
         }
         public Task<IAsyncCursor<TField>> DistinctAsync<TField>(IClientSessionHandle session, FieldDefinition<TDocument, TField> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("Distinct is not supported by the in-memory fake.");
+            return Task.FromResult(Distinct(session, field, filter, options, cancellationToken));
         }
 
         #endregion
@@ -417,19 +745,19 @@ namespace BrandUp.MongoDB.Testing
         }
         public IAsyncCursor<TProjection> FindSync<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            if (filter is ExpressionFilterDefinition<TDocument> ef)
-            {
-                var docs = docObjects.Where(ef.Expression.Compile()).OfType<TProjection>().ToList();
-                return new FakeAsyncCursor<TProjection>(docs);
-            }
-            else
-            {
-                var filterDoc = filter.Render(new RenderArgs<TDocument>(DocumentSerializer, BsonSerializer.SerializerRegistry));
-                if (filterDoc.ElementCount > 0)
-                    throw new NotSupportedException();
+            EnsureNoCollation(options?.Collation);
 
-                return new FakeAsyncCursor<TProjection>(docObjects.OfType<TProjection>());
-            }
+            var indices = FindMatchingIndices(filter);
+            SortIndices(indices, options?.Sort);
+
+            IEnumerable<int> selected = indices;
+            if (options?.Skip != null)
+                selected = selected.Skip(options.Skip.Value);
+            if (options?.Limit != null)
+                selected = selected.Take(options.Limit.Value);
+
+            var results = selected.Select(i => docObjects[i]).OfType<TProjection>().ToList();
+            return new FakeAsyncCursor<TProjection>(results);
         }
         public Task<IAsyncCursor<TProjection>> FindAsync<TProjection>(FilterDefinition<TDocument> filter, FindOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
@@ -450,21 +778,20 @@ namespace BrandUp.MongoDB.Testing
         }
         public TProjection FindOneAndDelete<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            var filtered = Filter(filter);
-            if (filtered.Count == 0)
+            EnsureNoCollation(options?.Collation);
+
+            var indices = FindMatchingIndices(filter);
+            if (indices.Count == 0)
                 return default!;
-            if (filtered.Count > 1)
-                throw new InvalidOperationException();
 
-            var doc = filtered[0];
-            DeleteDocuments(filtered);
-            return AsProjection<TProjection>(doc);
+            SortIndices(indices, options?.Sort);
+            var docIndex = indices[0];
+
+            var document = docObjects[docIndex];
+            DeleteDocuments(session, [docIndex]);
+            return AsProjection<TProjection>(document);
         }
 
-        static TProjection AsProjection<TProjection>(TDocument document)
-        {
-            return (TProjection)(object)document!;
-        }
         public Task<TProjection> FindOneAndDeleteAsync<TProjection>(FilterDefinition<TDocument> filter, FindOneAndDeleteOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
             return FindOneAndDeleteAsync(null!, filter, options, cancellationToken);
@@ -484,29 +811,39 @@ namespace BrandUp.MongoDB.Testing
         }
         public TProjection FindOneAndReplace<TProjection>(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, FindOneAndReplaceOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
-            var filtered = Filter(filter);
-            if (filtered.Count > 1)
-                throw new InvalidOperationException();
+            EnsureNoCollation(options?.Collation);
 
+            var indices = FindMatchingIndices(filter);
             var returnDocument = options?.ReturnDocument ?? ReturnDocument.Before;
 
-            if (filtered.Count == 0)
+            try
             {
-                if (options?.IsUpsert == true)
+                if (indices.Count == 0)
                 {
-                    InsertDocument(replacement);
-                    return returnDocument == ReturnDocument.After ? AsProjection<TProjection>(replacement) : default!;
+                    if (options?.IsUpsert == true)
+                    {
+                        InsertDocument(session, replacement);
+                        return returnDocument == ReturnDocument.After ? AsProjection<TProjection>(replacement) : default!;
+                    }
+
+                    return default!;
                 }
 
-                return default!;
+                SortIndices(indices, options?.Sort);
+                var docIndex = indices[0];
+
+                var before = docObjects[docIndex];
+                ReplaceDocumentAt(session, docIndex, replacement);
+
+                return returnDocument == ReturnDocument.After
+                    ? AsProjection<TProjection>(replacement)
+                    : AsProjection<TProjection>(before);
             }
-
-            var before = filtered[0];
-            ReplaceOneInternal(session, filter, replacement, cancellationToken);
-
-            return returnDocument == ReturnDocument.After
-                ? AsProjection<TProjection>(replacement)
-                : AsProjection<TProjection>(before);
+            catch (MongoWriteException writeException) when (writeException.WriteError != null)
+            {
+                // findAndModify reports write failures as command errors.
+                throw DriverExceptionFactory.CreateCommandException(writeException.WriteError.Code, writeException.WriteError.Message);
+            }
         }
         public Task<TProjection> FindOneAndReplaceAsync<TProjection>(FilterDefinition<TDocument> filter, TDocument replacement, FindOneAndReplaceOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
@@ -529,22 +866,47 @@ namespace BrandUp.MongoDB.Testing
         {
             ArgumentNullException.ThrowIfNull(update);
 
-            var filtered = Filter(filter);
-            if (filtered.Count > 1)
-                throw new InvalidOperationException();
-            if (filtered.Count == 0)
-                return default!;
+            EnsureNoArrayFilters(options?.ArrayFilters);
+            EnsureNoCollation(options?.Collation);
+
+            var renderedUpdate = update.Render(RenderArgs);
+            if (renderedUpdate is not BsonDocument updateDoc)
+                throw new NotSupportedException("Aggregation-pipeline updates are not supported by the in-memory fake.");
 
             var returnDocument = options?.ReturnDocument ?? ReturnDocument.Before;
+            var indices = FindMatchingIndices(filter);
 
-            var before = filtered[0];
-            var docIndex = docObjects.IndexOf(before);
-            UpdateDocuments(filtered, update);
-            var after = docObjects[docIndex];
+            try
+            {
+                if (indices.Count == 0)
+                {
+                    if (options?.IsUpsert == true)
+                    {
+                        var seed = BsonUpdateEngine.BuildUpsertSeed(RenderFilterForUpsert(filter));
+                        ApplyUpdateEngine(updateDoc, seed, insertMode: true);
+                        UpsertInsert(session, seed, out var inserted);
+                        return returnDocument == ReturnDocument.After ? AsProjection<TProjection>(inserted) : default!;
+                    }
 
-            return returnDocument == ReturnDocument.After
-                ? AsProjection<TProjection>(after)
-                : AsProjection<TProjection>(before);
+                    return default!;
+                }
+
+                SortIndices(indices, options?.Sort);
+                var docIndex = indices[0];
+
+                var before = docObjects[docIndex];
+                UpdateDocumentAt(session, docIndex, updateDoc);
+                var after = docObjects[docIndex];
+
+                return returnDocument == ReturnDocument.After
+                    ? AsProjection<TProjection>(after)
+                    : AsProjection<TProjection>(before);
+            }
+            catch (MongoWriteException writeException) when (writeException.WriteError != null)
+            {
+                // findAndModify reports write failures as command errors.
+                throw DriverExceptionFactory.CreateCommandException(writeException.WriteError.Code, writeException.WriteError.Message);
+            }
         }
         public Task<TProjection> FindOneAndUpdateAsync<TProjection>(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, FindOneAndUpdateOptions<TDocument, TProjection>? options = null, CancellationToken cancellationToken = default)
         {
@@ -568,8 +930,13 @@ namespace BrandUp.MongoDB.Testing
             if (documents == null)
                 throw new ArgumentNullException(nameof(documents));
 
-            foreach (var document in documents)
-                InsertDocument(document);
+            // InsertMany is a bulk insert on a real server: failures surface as
+            // MongoBulkWriteException and IsOrdered controls whether the rest is applied.
+            var models = documents.Select(it => (WriteModel<TDocument>)new InsertOneModel<TDocument>(it)).ToList();
+            if (models.Count == 0)
+                throw new ArgumentException("The documents to insert cannot be empty.", nameof(documents));
+
+            BulkWrite(session, models, new BulkWriteOptions { IsOrdered = options?.IsOrdered ?? true }, cancellationToken);
         }
         public Task InsertManyAsync(IEnumerable<TDocument> documents, InsertManyOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -592,7 +959,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public void InsertOne(IClientSessionHandle session, TDocument document, InsertOneOptions? options = null, CancellationToken cancellationToken = default)
         {
-            InsertDocument(document);
+            InsertDocument(session, document);
         }
         public Task InsertOneAsync(TDocument document, CancellationToken _cancellationToken)
         {
@@ -649,7 +1016,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public ReplaceOneResult ReplaceOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return ReplaceOneInternal(session, filter, replacement, cancellationToken);
+            return ReplaceOneInternal(session, filter, replacement, options?.IsUpsert ?? false, options?.Collation);
         }
         public Task<ReplaceOneResult> ReplaceOneAsync(FilterDefinition<TDocument> filter, TDocument replacement, UpdateOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -666,7 +1033,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public ReplaceOneResult ReplaceOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, ReplaceOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return ReplaceOneInternal(session, filter, replacement, cancellationToken);
+            return ReplaceOneInternal(session, filter, replacement, options?.IsUpsert ?? false, options?.Collation);
         }
         public Task<ReplaceOneResult> ReplaceOneAsync(FilterDefinition<TDocument> filter, TDocument replacement, ReplaceOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -677,41 +1044,66 @@ namespace BrandUp.MongoDB.Testing
             return Task.FromResult(ReplaceOne(session, filter, replacement, options, cancellationToken));
         }
 
-        ReplaceOneResult ReplaceOneInternal(IClientSessionHandle session, FilterDefinition<TDocument> filter, TDocument replacement, CancellationToken cancellationToken = default)
+        ReplaceOneResult ReplaceOneInternal(IClientSessionHandle? session, FilterDefinition<TDocument> filter, TDocument replacement, bool isUpsert, Collation? collation = null)
         {
-            var filteredDocs = Filter(filter);
-            if (filteredDocs.Count > 1)
-                throw new InvalidOperationException();
-            else if (filteredDocs.Count == 0)
-                return ReplaceOneResult.Unacknowledged.Instance;
+            ArgumentNullException.ThrowIfNull(replacement);
+            EnsureNoCollation(collation);
 
-            var docObject = filteredDocs[0];
-            var docIndex = docObjects.IndexOf(docObject);
-            if (docIndex == -1)
-                throw new InvalidOperationException();
-            var doc = docs[docIndex];
-            var docId = GetDocumentIdValue(doc);
-
-            var replacedDoc = new BsonDocument();
-            using (var bsonReader = new BsonDocumentWriter(replacedDoc))
+            var indices = FindMatchingIndices(filter);
+            if (indices.Count == 0)
             {
-                var bsonSerializationContext = BsonSerializationContext.CreateRoot(bsonReader);
-                DocumentSerializer.Serialize(bsonSerializationContext, default, docObject);
+                if (isUpsert)
+                {
+                    var upsertedId = InsertDocument(session, replacement);
+                    return new ReplaceOneResult.Acknowledged(0, 0, upsertedId);
+                }
+
+                return new ReplaceOneResult.Acknowledged(0, 0, null);
             }
 
-            var replacedDocId = GetDocumentIdValue(replacedDoc);
+            var docIndex = indices[0];
+            var modified = ReplaceDocumentAt(session, docIndex, replacement);
 
-            if (replacedDocId != docId)
-            {
-                if (!docIds.Remove(docId))
-                    throw new InvalidOperationException();
-                docIds.Add(replacedDocId, docIndex);
-            }
+            return new ReplaceOneResult.Acknowledged(1, modified ? 1 : 0, null);
+        }
 
-            docs[docIndex] = replacedDoc;
+        /// <summary>Replaces the document at the given index. Returns true when the stored BSON changed.</summary>
+        bool ReplaceDocumentAt(IClientSessionHandle? session, int docIndex, TDocument replacement)
+        {
+            var currentDoc = docs[docIndex];
+            var currentId = GetDocumentIdValue(currentDoc);
+
+            var replacementDoc = SerializeDocument(replacement);
+
+            if (!replacementDoc.Contains("_id"))
+                replacementDoc.InsertAt(0, new BsonElement("_id", currentId));
+
+            var replacementId = GetDocumentIdValue(replacementDoc);
+            if (replacementId != currentId)
+                throw DriverExceptionFactory.CreateImmutableIdException();
+
+            EnsureUniqueIndexes(replacementDoc, docIndex);
+
+            var modified = !replacementDoc.Equals(currentDoc);
+
+            var previousObject = docObjects[docIndex];
+
+            docs[docIndex] = replacementDoc;
             docObjects[docIndex] = replacement;
 
-            return new ReplaceOneResult.Acknowledged(1, 1, replacedDocId);
+            if (modified)
+            {
+                RecordUndo(session, () =>
+                {
+                    if (!docIds.TryGetValue(currentId, out var currentIndex))
+                        return;
+
+                    docs[currentIndex] = currentDoc;
+                    docObjects[currentIndex] = previousObject;
+                });
+            }
+
+            return modified;
         }
 
         #endregion
@@ -724,14 +1116,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public UpdateResult UpdateMany(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            if (filter == null)
-                throw new ArgumentNullException(nameof(filter));
-            if (update == null)
-                throw new ArgumentNullException(nameof(update));
-
-            var expressionFilter = filter as ExpressionFilterDefinition<TDocument> ?? throw new InvalidCastException();
-            var docs = docObjects.Where(expressionFilter.Expression.Compile()).ToList();
-            return UpdateDocuments(docs, update);
+            return ApplyUpdate(session, filter, update, options, updateManyDocuments: true);
         }
         public Task<UpdateResult> UpdateManyAsync(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -752,13 +1137,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public UpdateResult UpdateOne(IClientSessionHandle session, FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions? options = null, CancellationToken cancellationToken = default)
         {
-            if (update == null)
-                throw new ArgumentNullException(nameof(update));
-
-            var docs = Filter(filter);
-            if (docs.Count > 1)
-                throw new InvalidOperationException();
-            return UpdateDocuments(docs, update);
+            return ApplyUpdate(session, filter, update, options, updateManyDocuments: false);
         }
         public Task<UpdateResult> UpdateOneAsync(FilterDefinition<TDocument> filter, UpdateDefinition<TDocument> update, UpdateOptions? options = null, CancellationToken cancellationToken = default)
         {
@@ -828,24 +1207,40 @@ namespace BrandUp.MongoDB.Testing
             throw new NotSupportedException("Aggregation pipelines are not supported by the in-memory fake.");
         }
 
+        #region DistinctMany members
+
         public IAsyncCursor<TItem> DistinctMany<TItem>(FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
+            return DistinctMany(null!, field, filter, options, cancellationToken);
         }
 
         public IAsyncCursor<TItem> DistinctMany<TItem>(IClientSessionHandle session, FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
+            ArgumentNullException.ThrowIfNull(field);
+            ArgumentNullException.ThrowIfNull(filter);
+            EnsureNoCollation(options?.Collation);
+
+            var rendered = field.Render(RenderArgs);
+
+            IBsonSerializer<TItem> itemSerializer;
+            if (rendered.FieldSerializer is IBsonArraySerializer arraySerializer && arraySerializer.TryGetItemSerializationInfo(out var itemInfo) && itemInfo.Serializer is IBsonSerializer<TItem> typedSerializer)
+                itemSerializer = typedSerializer;
+            else
+                itemSerializer = BsonSerializer.LookupSerializer<TItem>();
+
+            return DistinctValues(itemSerializer, rendered.FieldName, filter);
         }
 
         public Task<IAsyncCursor<TItem>> DistinctManyAsync<TItem>(FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
+            return Task.FromResult(DistinctMany(field, filter, options, cancellationToken));
         }
 
         public Task<IAsyncCursor<TItem>> DistinctManyAsync<TItem>(IClientSessionHandle session, FieldDefinition<TDocument, IEnumerable<TItem>> field, FilterDefinition<TDocument> filter, DistinctOptions? options = null, CancellationToken cancellationToken = default)
         {
-            throw new NotSupportedException("DistinctMany is not supported by the in-memory fake.");
+            return Task.FromResult(DistinctMany(session, field, filter, options, cancellationToken));
         }
+
+        #endregion
     }
 }

@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BrandUp.MongoDB.Testing.Internals;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization;
 using MongoDB.Driver;
@@ -11,7 +13,7 @@ namespace BrandUp.MongoDB.Testing
     public class FakeMongoIndexManager<TDocument> : IMongoIndexManager<TDocument>
     {
         readonly FakeMongoCollection<TDocument> collection;
-        readonly Dictionary<string, BsonDocument> indexes = new Dictionary<string, BsonDocument>();
+        readonly Dictionary<string, FakeIndexDescriptor> indexes = new Dictionary<string, FakeIndexDescriptor>();
 
         public FakeMongoIndexManager(FakeMongoCollection<TDocument> collection)
         {
@@ -22,16 +24,44 @@ namespace BrandUp.MongoDB.Testing
         public IBsonSerializer<TDocument> DocumentSerializer => collection.DocumentSerializer;
         public MongoCollectionSettings Settings => collection.Settings;
 
+        internal IEnumerable<FakeIndexDescriptor> UniqueIndexes => indexes.Values.Where(it => it.Unique);
+
         private string Insert(CreateIndexModel<TDocument> indexModel)
         {
             if (indexModel == null)
                 throw new ArgumentNullException(nameof(indexModel));
 
-            var name = indexModel.Options?.Name;
-            if (name == null)
-                name = $"index{indexes.Count}";
+            var renderArgs = new RenderArgs<TDocument>(DocumentSerializer, Settings.SerializerRegistry);
+            var keys = indexModel.Keys.Render(renderArgs);
 
-            indexes.Add(name.ToLower(), new BsonDocument { new BsonElement("name", name) });
+            // Default name matches the server convention ("Field_1_Other_-1"), so re-creating
+            // the same unnamed index resolves to the same name and becomes a no-op below.
+            var name = indexModel.Options?.Name
+                ?? string.Join("_", keys.Elements.Select(it => $"{it.Name}_{it.Value}"));
+
+            var options = indexModel.Options;
+            var partialFilter = (options as CreateIndexOptions<TDocument>)?.PartialFilterExpression?.Render(renderArgs);
+            var caseInsensitive = options?.Collation != null
+                && options.Collation.Strength is CollationStrength.Primary or CollationStrength.Secondary;
+
+            // Re-creating an index with the same name and key pattern is a no-op on a real server.
+            if (indexes.TryGetValue(name.ToLower(), out var existing))
+            {
+                if (existing.Keys.Equals(keys))
+                    return name;
+
+                throw new InvalidOperationException($"An index named \"{name}\" already exists with a different key pattern.");
+            }
+
+            indexes.Add(name.ToLower(), new FakeIndexDescriptor
+            {
+                Name = name,
+                Keys = keys,
+                Unique = options?.Unique ?? false,
+                Sparse = options?.Sparse ?? false,
+                PartialFilter = partialFilter,
+                CaseInsensitive = caseInsensitive
+            });
 
             return name;
         }
@@ -161,6 +191,9 @@ namespace BrandUp.MongoDB.Testing
         {
             ArgumentNullException.ThrowIfNull(name);
 
+            if (name == "_id_")
+                throw new InvalidOperationException("Cannot drop the _id index.");
+
             if (!indexes.Remove(name.ToLower()))
                 throw new InvalidOperationException($"Index \"{name}\" does not exist.");
         }
@@ -190,7 +223,7 @@ namespace BrandUp.MongoDB.Testing
         }
         public IAsyncCursor<BsonDocument> List(IClientSessionHandle session, CancellationToken cancellationToken = default)
         {
-            return new FakeAsyncCursor<BsonDocument>(indexes.Values);
+            return new FakeAsyncCursor<BsonDocument>(IndexDescriptions());
         }
         public Task<IAsyncCursor<BsonDocument>> ListAsync(CancellationToken cancellationToken = default)
         {
@@ -208,7 +241,7 @@ namespace BrandUp.MongoDB.Testing
 
         public IAsyncCursor<BsonDocument> List(IClientSessionHandle session, ListIndexesOptions? options = null, CancellationToken cancellationToken = default)
         {
-            return new FakeAsyncCursor<BsonDocument>(indexes.Values);
+            return new FakeAsyncCursor<BsonDocument>(IndexDescriptions());
         }
 
         public Task<IAsyncCursor<BsonDocument>> ListAsync(ListIndexesOptions options, CancellationToken cancellationToken = default)
@@ -219,6 +252,38 @@ namespace BrandUp.MongoDB.Testing
         public Task<IAsyncCursor<BsonDocument>> ListAsync(IClientSessionHandle session, ListIndexesOptions? options = null, CancellationToken cancellationToken = default)
         {
             return Task.FromResult(List(session, options, cancellationToken));
+        }
+
+        IEnumerable<BsonDocument> IndexDescriptions()
+        {
+            // A real server always reports the implicit _id index (DropAll keeps it too).
+            var idIndex = new BsonDocument
+            {
+                { "v", 2 },
+                { "key", new BsonDocument("_id", 1) },
+                { "name", "_id_" }
+            };
+
+            return new[] { idIndex }.Concat(indexes.Values
+                .Select(descriptor =>
+                {
+                    var description = new BsonDocument
+                    {
+                        { "v", 2 },
+                        { "key", descriptor.Keys },
+                        { "name", descriptor.Name }
+                    };
+
+                    if (descriptor.Unique)
+                        description.Add("unique", true);
+                    if (descriptor.Sparse)
+                        description.Add("sparse", true);
+                    if (descriptor.PartialFilter != null)
+                        description.Add("partialFilterExpression", descriptor.PartialFilter);
+
+                    return description;
+                }))
+                .ToArray();
         }
     }
 }

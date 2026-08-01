@@ -2,6 +2,7 @@
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Bindings;
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,6 +16,7 @@ namespace BrandUp.MongoDB.Testing
         readonly ClientSessionOptions options;
         readonly FakeServerSession serverSession = new();
         readonly ICoreSessionHandle wrappedCoreSession = NoCoreSession.NewHandle();
+        readonly List<Action> transactionUndoLog = new();
         private bool isInTransaction = false;
 
         public IMongoClient Client => client;
@@ -34,10 +36,27 @@ namespace BrandUp.MongoDB.Testing
             options = new ClientSessionOptions();
         }
 
+        /// <summary>
+        /// Records an undo action for a write performed within the current transaction.
+        /// Writes issued without this session (or outside a transaction) are not recorded,
+        /// so they survive an abort — matching server behaviour.
+        /// </summary>
+        internal void RecordUndo(Action undo)
+        {
+            if (!isInTransaction)
+                return;
+
+            transactionUndoLog.Add(undo);
+        }
+
         public void AbortTransaction(CancellationToken cancellationToken = default)
         {
             if (!isInTransaction)
                 throw new InvalidOperationException();
+
+            for (var i = transactionUndoLog.Count - 1; i >= 0; i--)
+                transactionUndoLog[i]();
+            transactionUndoLog.Clear();
 
             isInTransaction = false;
         }
@@ -56,6 +75,8 @@ namespace BrandUp.MongoDB.Testing
             if (!isInTransaction)
                 throw new InvalidOperationException();
 
+            transactionUndoLog.Clear();
+
             isInTransaction = false;
         }
         public Task CommitTransactionAsync(CancellationToken cancellationToken = default)
@@ -67,6 +88,10 @@ namespace BrandUp.MongoDB.Testing
 
         public void Dispose()
         {
+            // The real driver aborts an open transaction when the session is disposed.
+            if (isInTransaction)
+                AbortTransaction();
+
             wrappedCoreSession.Dispose();
             serverSession.Dispose();
         }
