@@ -200,8 +200,14 @@ Spins up a real ephemeral `mongod` (single-node replica set, so transactions wor
 via [EphemeralMongo](https://github.com/asimmon/ephemeral-mongo). Pick this for
 integration tests where you want the actual driver behaviour.
 
-### Legacy — `BrandUp.MongoDB.Testing.Mongo2Go` (deprecated)
+### Real `mongod` via Mongo2Go — `BrandUp.MongoDB.Testing.Mongo2Go`
 
-The Mongo2Go-backed helper is still published for backwards compatibility but is no
-longer maintained upstream. Both `AddTestMongoDb()` and `Mongo2GoDbClientFactory`
-are marked `[Obsolete]`; please migrate to `AddEphemeralMongoDb()`.
+NuGet: [BrandUp.MongoDB.Testing.Mongo2Go](https://www.nuget.org/packages/BrandUp.MongoDB.Testing.Mongo2Go/)
+
+```csharp
+services.AddTestMongoDb();
+```
+
+The same idea as the package above, but the `mongod` process is managed by
+[Mongo2Go](https://github.com/Mongo2Go/Mongo2Go) instead. Registers
+`Mongo2GoDbClientFactory` as the `IMongoDbClientFactory`.

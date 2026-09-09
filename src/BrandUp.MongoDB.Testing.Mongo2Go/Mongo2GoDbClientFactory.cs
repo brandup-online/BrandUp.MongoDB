@@ -4,7 +4,6 @@ using MongoDB.Driver;
 
 namespace BrandUp.MongoDB.Testing
 {
-    [Obsolete("Mongo2Go is no longer maintained. Migrate to BrandUp.MongoDB.Testing.EphemeralMongo (use EphemeralMongoDbClientFactory or AddEphemeralMongoDb).")]
     public class Mongo2GoDbClientFactory : IMongoDbClientFactory, IDisposable
     {
         readonly MongoDbRunner runner;

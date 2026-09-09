@@ -16,6 +16,10 @@ namespace BrandUp.MongoDB.Testing
             runner = MongoRunner.Run(new MongoRunnerOptions
             {
                 UseSingleNodeReplicaSet = true,
+
+                // Defaults to one day, so every new mongod patch release triggers another
+                // download and leaves one more copy behind in the binary cache.
+                NewVersionCheckTimeout = TimeSpan.FromDays(365),
             });
             client = new MongoClient(runner.ConnectionString);
         }
