@@ -17,8 +17,12 @@
 		<PackageVersion Include="EphemeralMongo" Version="3.2.0" />
 		<PackageVersion Include="Mongo2Go" Version="5.0.0" />
 
-		<!-- Third-party: raises the SharpCompress floor that MongoDB.Driver brings in transitively -->
-		<PackageVersion Include="SharpCompress" Version="1.0.0" />
+		<!--
+		  Third-party: raises the SharpCompress floor that MongoDB.Driver brings in transitively.
+		  Do not move to 1.0.0: it is unlisted and deprecated on nuget.org as an accidental publish
+		  ("Build mistake"); 0.50.x is the latest real release line.
+		-->
+		<PackageVersion Include="SharpCompress" Version="0.50.4" />
 
 		<!-- Build -->
 		<PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
