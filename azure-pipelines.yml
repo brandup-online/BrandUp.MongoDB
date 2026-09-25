@@ -1,13 +1,13 @@
 trigger:
 - master
 
+pr: none
+
 resources:
 - repo: self
 
 variables:
 - group: public-nuget
-- name: vmImageName
-  value: 'ubuntu-latest'
 - name: restore-projects
   value: '**/*.csproj'
 - name: test-projects
@@ -28,7 +28,6 @@ variables:
 name: $(version-major).$(version-minor).$(rev:r)
 
 pool:
-  # vmImage: $(vmImageName)
   name: Test
 
 stages:
@@ -38,7 +37,6 @@ stages:
   - job: BuildNet
     displayName: Build
     pool:
-      #vmImage: $(vmImageName)
       name: Test
       workspace:
         clean: all
@@ -49,6 +47,7 @@ stages:
       displayName: 'print variables'
 
     - checkout: self
+      fetchDepth: 1
       clean: "true"
       persistCredentials: "true"
 
@@ -57,13 +56,15 @@ stages:
       inputs:
         packageType: 'sdk'
         version: '10.x'
-        
+
+    # Sources come from the repository's nuget.config (nuget.org only), the same ones a local restore uses.
     - task: DotNetCoreCLI@2
       displayName: 'dotnet restore'
       inputs:
         command: 'restore'
         projects: $(restore-projects)
-        feedRestore: 'BrandUp'
+        feedsToUse: 'config'
+        nugetConfigPath: 'nuget.config'
 
     - task: DotNetCoreCLI@2
       displayName: 'dotnet build'
@@ -82,7 +83,7 @@ stages:
         projects: $(test-projects)
         arguments: >
           --configuration $(buildConfiguration)
-          --results-directory $(testResultsDirectory)
+          --results-directory "$(testResultsDirectory)"
           --report-trx
           --coverage
           --coverage-output-format cobertura
@@ -115,28 +116,12 @@ stages:
         command: "custom"
         projects: "src/*/*.csproj"
         custom: "pack"
-        arguments: "--configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory) /p:Version=$(Build.BuildNumber)"
+        arguments: '--configuration $(buildConfiguration) --output "$(Build.ArtifactStagingDirectory)" /p:Version=$(Build.BuildNumber)'
 
     - publish: $(build.artifactstagingdirectory)
       displayName: publish artifact
       condition: succeededOrFailed()
       artifact: net
-      
-  - job: GitTag
-    displayName: Add git tag
-    dependsOn: [ BuildNet ]
-    condition: succeeded()
-    steps:
-    - checkout: self
-      clean: "true"
-      persistCredentials: "true"
-
-    - powershell: |
-          git config --global user.name "AzureDevOps Agent"
-          git tag "$(Build.BuildNumber)" --force
-          git push origin "$(Build.BuildNumber)" --force
-          Write-Output "Tagging $(Build.Repository.Name) with $(Build.BuildNumber)"
-      displayName:  set git tag
 
 - stage: Production
   displayName: Deploy stage
@@ -146,19 +131,40 @@ stages:
     condition: succeeded()
     displayName: Production
     pool:
-      vmImage: $(vmImageName)
+      name: Test
     environment: $(envName)
     strategy:
       runOnce:
         deploy:
           steps:
-          
+          - task: UseDotNet@2
+            displayName: 'use dotnet 10.x'
+            inputs:
+              packageType: 'sdk'
+              version: '10.x'
+
           - task: DotNetCoreCLI@2
             displayName: 'publish nuget'
             inputs:
               command: custom
               custom: nuget
               arguments: >
-                push $(Pipeline.Workspace)/net/*.nupkg
+                push "$(Pipeline.Workspace)/net/*.nupkg"
                 -s $(nuget-api-url)
                 -k $(nuget-api-key)
+
+  - job: GitTag
+    displayName: Add git tag
+    dependsOn: [ Production ]
+    condition: succeeded()
+    steps:
+    - checkout: self
+      clean: "true"
+      persistCredentials: "true"
+
+    - script: |
+        echo Tagging $(Build.Repository.Name) with $(Build.BuildNumber)
+        git config user.name "AzureDevOps Agent"
+        git tag "$(Build.BuildNumber)" --force
+        git push origin "$(Build.BuildNumber)" --force
+      displayName: set git tag
