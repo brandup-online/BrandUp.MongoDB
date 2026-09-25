@@ -1,0 +1,34 @@
+<Project>
+
+	<PropertyGroup>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+		<CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<!-- Microsoft.Extensions -->
+		<PackageVersion Include="Microsoft.Extensions.Configuration" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="10.0.12" />
+		<PackageVersion Include="Microsoft.Extensions.Options" Version="10.0.12" />
+
+		<!-- MongoDB -->
+		<PackageVersion Include="MongoDB.Driver" Version="3.12.0" />
+		<PackageVersion Include="EphemeralMongo" Version="3.2.0" />
+		<PackageVersion Include="Mongo2Go" Version="5.0.0" />
+
+		<!-- Third-party: raises the SharpCompress floor that MongoDB.Driver brings in transitively -->
+		<PackageVersion Include="SharpCompress" Version="1.0.0" />
+
+		<!-- Build -->
+		<PackageVersion Include="Microsoft.SourceLink.GitHub" Version="10.0.401" />
+
+		<!-- Testing -->
+		<PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.1" />
+		<PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.11.2" />
+		<PackageVersion Include="Microsoft.Testing.Extensions.TrxReport" Version="2.4.1" />
+		<PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
+		<PackageVersion Include="xunit.v3" Version="4.0.1" />
+	</ItemGroup>
+
+</Project>

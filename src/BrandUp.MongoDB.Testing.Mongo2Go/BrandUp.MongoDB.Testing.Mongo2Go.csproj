@@ -5,15 +5,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="Mongo2Go" Version="5.0.0" />
+		<PackageReference Include="Mongo2Go" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\BrandUp.MongoDB\BrandUp.MongoDB.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.401" />
 	</ItemGroup>
 
 </Project>

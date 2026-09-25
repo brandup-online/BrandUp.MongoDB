@@ -5,15 +5,11 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="EphemeralMongo" Version="3.2.0" />
+		<PackageReference Include="EphemeralMongo" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\BrandUp.MongoDB\BrandUp.MongoDB.csproj" />
-	</ItemGroup>
-
-	<ItemGroup>
-	  <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.401" />
 	</ItemGroup>
 
 </Project>
